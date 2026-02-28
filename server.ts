@@ -6,7 +6,8 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const db = new Database("garment_tracker.db");
+const dbPath = process.env.DATABASE_PATH || "garment_tracker.db";
+const db = new Database(dbPath);
 
 // Initialize database
 db.exec(`
@@ -103,34 +104,6 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Helper to discover Chat ID
-  app.get("/api/telegram-setup", async (req, res) => {
-    const token = process.env.TELEGRAM_BOT_TOKEN;
-    if (!token) return res.status(400).json({ error: "Token not set" });
-
-    try {
-      const response = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
-      const data = await response.json();
-      
-      if (data.ok && data.result.length > 0) {
-        const lastMessage = data.result[data.result.length - 1];
-        res.json({ 
-          message: "Found recent message!",
-          chat_id: lastMessage.message.chat.id,
-          from: lastMessage.message.from.first_name,
-          text: lastMessage.message.text
-        });
-      } else {
-        res.json({ 
-          message: "No messages found. Please send a message to your bot first!",
-          instructions: "1. Open @ProductionAlarm_Bot in Telegram. 2. Send any message. 3. Refresh this page."
-        });
-      }
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch updates from Telegram" });
-    }
-  });
-
   // API Routes
   app.post("/api/batches", (req, res) => {
     const { id, buyer, style, color, apm_name, senior_executive, quantity, special_notes } = req.body;
@@ -181,6 +154,11 @@ async function startServer() {
       ORDER BY s.timestamp DESC
     `).all();
     res.json(scans);
+  });
+
+  app.get("/api/backup", (req, res) => {
+    const fullPath = path.resolve(dbPath);
+    res.download(fullPath, "production_backup.db");
   });
 
   // Vite middleware for development

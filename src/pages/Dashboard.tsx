@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Search, Filter, ArrowUpDown, Clock, MapPin, User, Package, CheckCircle2, BarChart3, Activity } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, Clock, MapPin, User, Package, CheckCircle2, BarChart3, Activity, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { Batch, Scan } from '../types';
 import { cn } from '../lib/utils';
@@ -104,6 +104,15 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
         </div>
         
         <div className="flex items-center gap-3">
+          <a 
+            href="/api/backup" 
+            download 
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-black/5 rounded-xl text-sm font-medium hover:bg-black/5 transition-colors"
+            title="Download Database Backup"
+          >
+            <Download className="w-4 h-4 text-blue-600" />
+            <span className="hidden sm:inline">Backup</span>
+          </a>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <input 
