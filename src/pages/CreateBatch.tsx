@@ -13,6 +13,7 @@ export default function CreateBatch() {
     apm_name: '',
     senior_executive: '',
     quantity: '',
+    batch_type: 'Bulk',
     special_notes: ''
   });
 
@@ -106,6 +107,23 @@ export default function CreateBatch() {
               placeholder="Total pieces"
               required
             />
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <Tag size={18} />
+                Batch Type
+              </label>
+              <select 
+                className="w-full px-4 py-3 bg-black/[0.02] border border-black/5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 appearance-none cursor-pointer"
+                value={formData.batch_type}
+                onChange={(e) => setFormData({ ...formData, batch_type: e.target.value })}
+                required
+              >
+                <option value="Bulk">Bulk Production</option>
+                <option value="Sample">Sample / Proto</option>
+                <option value="Mockup">Mockup / Trial</option>
+                <option value="Re-wash">Re-wash / Repair</option>
+              </select>
+            </div>
           </div>
 
           <div className="space-y-2">

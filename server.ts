@@ -19,6 +19,7 @@ db.exec(`
     apm_name TEXT,
     senior_executive TEXT,
     quantity INTEGER,
+    batch_type TEXT,
     special_notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -34,6 +35,18 @@ db.exec(`
     FOREIGN KEY (batch_id) REFERENCES batches(id)
   );
 `);
+
+// Migration: Add batch_type column if it doesn't exist
+try {
+  const tableInfo = db.prepare("PRAGMA table_info(batches)").all() as any[];
+  const hasBatchType = tableInfo.some(col => col.name === 'batch_type');
+  if (!hasBatchType) {
+    db.exec("ALTER TABLE batches ADD COLUMN batch_type TEXT DEFAULT 'Bulk'");
+    console.log("Migration: Added batch_type column to batches table.");
+  }
+} catch (error) {
+  console.error("Migration error:", error);
+}
 
 async function sendTelegramAlert(message: string) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -105,14 +118,26 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
-  app.post("/api/batches", (req, res) => {
-    const { id, buyer, style, color, apm_name, senior_executive, quantity, special_notes } = req.body;
+  app.post("/api/batches", async (req, res) => {
+    const { id, buyer, style, color, apm_name, senior_executive, quantity, batch_type, special_notes } = req.body;
     try {
       const stmt = db.prepare(`
-        INSERT INTO batches (id, buyer, style, color, apm_name, senior_executive, quantity, special_notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO batches (id, buyer, style, color, apm_name, senior_executive, quantity, batch_type, special_notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
-      stmt.run(id, buyer, style, color, apm_name, senior_executive, quantity, special_notes);
+      stmt.run(id, buyer, style, color, apm_name, senior_executive, quantity, batch_type, special_notes);
+      
+      // Log to Telegram for permanent record
+      await sendTelegramAlert(
+        `📦 *NEW BATCH CREATED*\n\n` +
+        `*ID:* ${id}\n` +
+        `*Type:* ${batch_type}\n` +
+        `*Style:* ${style}\n` +
+        `*Buyer:* ${buyer}\n` +
+        `*Qty:* ${quantity}\n` +
+        `*APM:* ${apm_name}`
+      );
+
       res.status(201).json({ success: true });
     } catch (error) {
       console.error(error);
@@ -131,7 +156,7 @@ async function startServer() {
     res.json(batch);
   });
 
-  app.post("/api/scans", (req, res) => {
+  app.post("/api/scans", async (req, res) => {
     const { batch_id, status, location, worker_name } = req.body;
     try {
       const stmt = db.prepare(`
@@ -139,6 +164,19 @@ async function startServer() {
         VALUES (?, ?, ?, ?)
       `);
       stmt.run(batch_id, status, location, worker_name);
+
+      // Get style name for the alert
+      const batch = db.prepare("SELECT style FROM batches WHERE id = ?").get(batch_id) as any;
+      
+      // Log to Telegram for permanent record
+      await sendTelegramAlert(
+        `📲 *NEW SCAN RECORDED*\n\n` +
+        `*Batch:* ${batch_id} (${batch?.style || 'Unknown'})\n` +
+        `*Status:* ${status}\n` +
+        `*Location:* ${location}\n` +
+        `*Worker:* ${worker_name}`
+      );
+
       res.status(201).json({ success: true });
     } catch (error) {
       console.error(error);

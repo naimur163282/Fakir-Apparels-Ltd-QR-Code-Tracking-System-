@@ -140,6 +140,9 @@ export default function UpdateStatus() {
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Style</p>
               <p className="font-bold text-lg">{batch.style}</p>
+              <span className="text-[9px] font-bold uppercase tracking-widest bg-black/5 px-2 py-0.5 rounded text-slate-500">
+                {batch.batch_type}
+              </span>
             </div>
             <div className="text-right">
               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Batch ID</p>

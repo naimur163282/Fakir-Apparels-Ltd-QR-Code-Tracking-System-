@@ -222,6 +222,7 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
               <thead>
                 <tr className="bg-black/[0.02] text-[11px] uppercase tracking-widest font-bold text-muted-foreground">
                   <th className="px-6 py-4">Batch ID</th>
+                  <th className="px-6 py-4">Type</th>
                   <th className="px-6 py-4">Buyer</th>
                   <th className="px-6 py-4">Style</th>
                   <th className="px-6 py-4">Current Status</th>
@@ -243,6 +244,11 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                           {batch.id}
                           {delayed && <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" title="Production Delay!" />}
                         </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 px-2 py-1 rounded text-slate-600">
+                          {batch.batch_type}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-sm">{batch.buyer}</td>
                       <td className="px-6 py-4 text-sm font-semibold">{batch.style}</td>

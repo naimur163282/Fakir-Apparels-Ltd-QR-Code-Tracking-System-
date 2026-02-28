@@ -6,6 +6,7 @@ export interface Batch {
   apm_name: string;
   senior_executive: string;
   quantity: number;
+  batch_type: string;
   special_notes: string;
   created_at: string;
 }

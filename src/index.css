@@ -6,6 +6,32 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+@layer utilities {
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    
+    body {
+      background: white !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    main {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .print-half-page {
+      width: 100% !important;
+      border: 2px solid black !important;
+      box-shadow: none !important;
+      margin: 0 !important;
+    }
+  }
+}
+
 @layer base {
   body {
     @apply bg-[#F5F5F5] text-[#1A1A1A];

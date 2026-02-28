@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { motion } from 'motion/react';
-import { Printer, Download, ArrowLeft, Share2, CheckCircle2 } from 'lucide-react';
+import { Printer, Download, ArrowLeft, Share2, CheckCircle2, QrCode as QrCodeIcon } from 'lucide-react';
 import { Batch } from '../types';
 
 export default function BatchCard() {
@@ -73,7 +73,7 @@ export default function BatchCard() {
         <div className="border-b-2 border-black px-8 py-6 flex justify-between items-center">
           <div className="flex items-center gap-6">
             <div className="w-12 h-12 bg-black flex items-center justify-center shrink-0">
-              <QrCode size={32} className="text-white" />
+              <QrCodeIcon size={32} className="text-white" />
             </div>
             <div>
               <h1 className="text-2xl font-bold uppercase tracking-tight leading-none">
@@ -98,6 +98,7 @@ export default function BatchCard() {
               <FormalDetail label="Buyer / Client" value={batch.buyer} />
               <FormalDetail label="Style Reference" value={batch.style} />
               <FormalDetail label="Color / Shade" value={batch.color} />
+              <FormalDetail label="Batch Type" value={batch.batch_type} />
               <FormalDetail label="Total Quantity" value={`${batch.quantity} PCS`} />
               <FormalDetail label="APM Responsible" value={batch.apm_name} />
               <FormalDetail label="Senior Executive" value={batch.senior_executive} />
@@ -136,7 +137,7 @@ export default function BatchCard() {
 
       <div className="mt-8 p-6 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-start gap-4 no-print">
         <div className="p-2 bg-emerald-100 rounded-xl text-emerald-600">
-          <QrCode size={24} />
+          <QrCodeIcon size={24} />
         </div>
         <div>
           <h4 className="font-bold text-emerald-900">Worker Instructions</h4>
