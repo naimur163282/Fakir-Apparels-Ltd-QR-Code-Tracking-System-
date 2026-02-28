@@ -1,0 +1,5 @@
+{
+  "name": "Garment Batch Tracker",
+  "description": "A comprehensive system for tracking garment production batches using QR codes and real-time status updates.",
+  "requestFramePermissions": ["camera"]
+}
