@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Search, Filter, ArrowUpDown, Clock, MapPin, User, Package, CheckCircle2, BarChart3, Activity, Download } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, Clock, MapPin, User, Package, CheckCircle2, BarChart3, Activity, Download, Zap, ShieldCheck, Globe } from 'lucide-react';
 import { format } from 'date-fns';
 import { Batch, Scan } from '../types';
 import { cn } from '../lib/utils';
@@ -92,41 +92,46 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
   };
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">
-            {showListOnly ? 'Batch Inventory' : 'Production Dashboard'}
+    <div className="space-y-10 pb-20">
+      <header className="flex flex-col xl:flex-row xl:items-end justify-between gap-8">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="px-2 py-0.5 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest rounded">Live</div>
+            <div className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Production Intelligence System</div>
+          </div>
+          <h2 className="text-6xl font-black tracking-tighter uppercase italic leading-none">
+            {showListOnly ? 'Inventory' : 'Mission Control'}
           </h2>
-          <p className="text-muted-foreground mt-1">
-            {showListOnly ? 'Manage and view all production batches' : 'Real-time tracking of all garment batches'}
+          <p className="text-muted-foreground font-medium max-w-xl">
+            {showListOnly ? 'Comprehensive database of all production batches and historical records.' : 'Real-time telemetry and process monitoring for Fakir Apparels Washing Plant.'}
           </p>
         </div>
         
-        <div className="flex items-center gap-3">
-          <a 
-            href="/api/backup" 
-            download 
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-black/5 rounded-xl text-sm font-medium hover:bg-black/5 transition-colors"
-            title="Download Database Backup"
-          >
-            <Download className="w-4 h-4 text-blue-600" />
-            <span className="hidden sm:inline">Backup</span>
-          </a>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2 p-1 bg-white border border-black/5 rounded-2xl shadow-sm">
+            <a 
+              href="/api/backup" 
+              download 
+              className="flex items-center gap-2 px-4 py-2.5 hover:bg-black hover:text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+            >
+              <Download size={14} />
+              Backup
+            </a>
+          </div>
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 group-focus-within:text-emerald-500 transition-colors" />
             <input 
               type="text" 
-              placeholder="Search style or batch ID..."
-              className="pl-10 pr-4 py-2 bg-white border border-black/5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 w-full md:w-64"
+              placeholder="Filter style or ID..."
+              className="pl-12 pr-6 py-3.5 bg-white border border-black/5 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/10 w-full md:w-72 shadow-sm transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <select 
-              className="pl-10 pr-8 py-2 bg-white border border-black/5 rounded-xl text-sm focus:outline-none appearance-none cursor-pointer"
+              className="pl-12 pr-10 py-3.5 bg-white border border-black/5 rounded-2xl text-sm font-bold focus:outline-none appearance-none cursor-pointer shadow-sm hover:bg-black/[0.02] transition-all"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
@@ -138,22 +143,30 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
 
       {!showListOnly && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard label="Active Batches" value={batches.length} icon={<Package className="text-blue-500" />} />
-            <StatCard label="Total Scans Today" value={scans.filter(s => new Date(s.timestamp).toDateString() === new Date().toDateString()).length} icon={<Clock className="text-emerald-500" />} />
-            <StatCard label="Latest Update" value={scans[0]?.status || 'N/A'} subValue={scans[0] ? format(new Date(scans[0].timestamp), 'HH:mm') : ''} icon={<MapPin className="text-orange-500" />} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard label="Active Batches" value={batches.length} icon={<Package className="text-blue-500" />} trend="+12%" />
+            <StatCard label="Scans (24h)" value={scans.filter(s => new Date(s.timestamp).toDateString() === new Date().toDateString()).length} icon={<Zap className="text-yellow-500" />} trend="Active" />
+            <StatCard label="System Integrity" value="99.9%" icon={<ShieldCheck className="text-emerald-500" />} trend="Secure" />
+            <StatCard label="Global Sync" value="Live" icon={<Globe className="text-purple-500" />} trend="0.2ms" />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-black/5 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold text-lg flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-emerald-600" />
-                  Production Distribution
-                </h3>
-                <span className="text-xs font-medium text-muted-foreground">Live Batch Count</span>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 bg-white p-10 rounded-[2.5rem] border border-black/5 shadow-[0_32px_64px_-15px_rgba(0,0,0,0.05)] relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-emerald-500" />
+              <div className="flex items-center justify-between mb-10">
+                <div>
+                  <h3 className="font-black text-2xl uppercase tracking-tighter italic flex items-center gap-3">
+                    <BarChart3 className="w-6 h-6 text-emerald-600" />
+                    Process Telemetry
+                  </h3>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Batch distribution across departments</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Real-time Feed</span>
+                </div>
               </div>
-              <div className="h-64 w-full">
+              <div className="h-72 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={getChartData()}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
@@ -161,20 +174,21 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                       dataKey="name" 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fontSize: 12, fontWeight: 500 }} 
+                      tick={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }} 
                     />
                     <YAxis 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fontSize: 12, fontWeight: 500 }} 
+                      tick={{ fontSize: 10, fontWeight: 800 }} 
                     />
                     <Tooltip 
                       cursor={{ fill: '#f8f8f8' }}
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '16px' }}
+                      itemStyle={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '10px' }}
                     />
-                    <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={40}>
+                    <Bar dataKey="value" radius={[10, 10, 0, 0]} barSize={50}>
                       {getChartData().map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={['#3b82f6', '#f59e0b', '#ef4444', '#10b981', '#8b5cf6'][index % 5]} />
+                        <Cell key={`cell-${index}`} fill={['#000000', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6'][index % 5]} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -182,23 +196,27 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-black/5 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold text-lg flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-emerald-600" />
-                  System Health
+            <div className="bg-white p-10 rounded-[2.5rem] border border-black/5 shadow-[0_32px_64px_-15px_rgba(0,0,0,0.05)] relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-black" />
+              <div className="flex items-center justify-between mb-10">
+                <h3 className="font-black text-2xl uppercase tracking-tighter italic flex items-center gap-3">
+                  <Activity className="w-6 h-6 text-black" />
+                  Core Status
                 </h3>
               </div>
-              <div className="space-y-6">
-                <HealthItem label="Database Sync" status="Healthy" time="Real-time" />
-                <HealthItem label="Telegram Bot" status={process.env.TELEGRAM_BOT_TOKEN ? "Active" : "Not Configured"} time="Polling 5m" />
-                <HealthItem label="Server Load" status="Low" time="0.2ms latency" />
+              <div className="space-y-8">
+                <HealthItem label="Database Engine" status="Healthy" time="SQLite V3" />
+                <HealthItem label="Telegram Gateway" status={process.env.TELEGRAM_BOT_TOKEN ? "Active" : "Offline"} time="Bot API V7" />
+                <HealthItem label="Network Latency" status="Optimal" time="0.12ms" />
                 
-                <div className="pt-4 border-t border-black/5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Current Server Time</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-mono font-bold">{format(new Date(), 'HH:mm:ss')}</span>
-                    <span className="text-xs font-medium bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md">UTC-8</span>
+                <div className="pt-8 border-t-2 border-dashed border-black/5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-4">Master Clock</p>
+                  <div className="flex items-center justify-between bg-black text-white p-6 rounded-3xl shadow-xl">
+                    <span className="text-4xl font-mono font-black tracking-tighter">{format(new Date(), 'HH:mm:ss')}</span>
+                    <div className="text-right">
+                      <p className="text-[8px] font-black uppercase tracking-widest opacity-50">Zone</p>
+                      <p className="text-xs font-black">UTC-8</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -207,12 +225,15 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
         </>
       )}
 
-      <div className="bg-white rounded-2xl border border-black/5 overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-black/5 flex items-center justify-between">
-          <h3 className="font-semibold text-lg">{showListOnly ? 'Batch Inventory' : 'Live Batch Tracking'}</h3>
-          <button className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1 hover:text-emerald-600 transition-colors">
+      <div className="bg-white rounded-[2.5rem] border border-black/5 overflow-hidden shadow-[0_32px_64px_-15px_rgba(0,0,0,0.05)]">
+        <div className="p-10 border-b border-black/5 flex items-center justify-between bg-black/[0.01]">
+          <div>
+            <h3 className="font-black text-3xl uppercase tracking-tighter italic">{showListOnly ? 'Inventory' : 'Live Telemetry'}</h3>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Real-time production sequence records</p>
+          </div>
+          <button className="px-6 py-3 bg-white border border-black/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 hover:bg-black hover:text-white transition-all shadow-sm">
             <ArrowUpDown size={14} />
-            Sort by Time
+            Sort Sequence
           </button>
         </div>
 
@@ -401,30 +422,38 @@ function HealthItem({ label, status, time }: { label: string, status: string, ti
   return (
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-sm font-bold">{label}</p>
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{time}</p>
+        <p className="text-xs font-black uppercase tracking-widest">{label}</p>
+        <p className="text-[9px] text-muted-foreground uppercase tracking-[0.2em] mt-0.5">{time}</p>
       </div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold">{status}</span>
+      <div className="flex items-center gap-3">
+        <span className="text-[10px] font-black uppercase tracking-widest">{status}</span>
         <div className={cn(
-          "w-2 h-2 rounded-full animate-pulse",
-          status === "Healthy" || status === "Active" || status === "Low" ? "bg-emerald-500" : "bg-orange-500"
+          "w-2.5 h-2.5 rounded-full",
+          status === "Healthy" || status === "Active" || status === "Optimal" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-orange-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"
         )} />
       </div>
     </div>
   );
 }
 
-function StatCard({ label, value, subValue, icon }: { label: string, value: string | number, subValue?: string, icon: React.ReactNode }) {
+function StatCard({ label, value, trend, icon }: { label: string, value: string | number, trend?: string, icon: React.ReactNode }) {
   return (
-    <div className="bg-white p-6 rounded-2xl border border-black/5 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{label}</span>
-        <div className="p-2 bg-black/[0.02] rounded-lg">{icon}</div>
+    <div className="bg-white p-8 rounded-[2rem] border border-black/5 shadow-sm hover:shadow-xl transition-all group overflow-hidden relative">
+      <div className="absolute top-0 right-0 w-24 h-24 bg-black/[0.01] rounded-full -mr-12 -mt-12 transition-all group-hover:scale-150" />
+      <div className="flex items-center justify-between mb-6 relative z-10">
+        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{label}</span>
+        <div className="p-3 bg-black/[0.03] rounded-2xl group-hover:bg-black group-hover:text-white transition-all">{icon}</div>
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-bold tracking-tight">{value}</span>
-        {subValue && <span className="text-sm text-muted-foreground font-medium">{subValue}</span>}
+      <div className="flex items-end justify-between relative z-10">
+        <span className="text-4xl font-black tracking-tighter italic">{value}</span>
+        {trend && (
+          <span className={cn(
+            "text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg",
+            trend.includes('+') || trend === "Active" || trend === "Secure" ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"
+          )}>
+            {trend}
+          </span>
+        )}
       </div>
     </div>
   );

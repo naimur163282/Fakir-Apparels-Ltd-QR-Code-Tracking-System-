@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Save, User, Tag, Palette, Briefcase, Users, Hash, FileText } from 'lucide-react';
+import { Save, User, Tag, Palette, Briefcase, Users, Hash, FileText, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function CreateBatch() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     buyer: '',
     style: '',
@@ -20,6 +21,7 @@ export default function CreateBatch() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     const batchId = `BT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     
@@ -36,28 +38,53 @@ export default function CreateBatch() {
 
       if (response.ok) {
         navigate(`/batch/${batchId}`);
+      } else {
+        const errData = await response.json();
+        setError(errData.error || 'Failed to generate batch. Please try again.');
       }
     } catch (error) {
       console.error('Error creating batch:', error);
+      setError('Network error. Please check your connection.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <header className="mb-8">
-        <h2 className="text-3xl font-bold tracking-tight">Create New Batch</h2>
-        <p className="text-muted-foreground mt-1">Enter garment production details to generate a tracking QR code.</p>
+    <div className="max-w-4xl mx-auto py-8">
+      <header className="mb-10 text-center">
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold uppercase tracking-widest mb-4 border border-emerald-500/20"
+        >
+          <Sparkles size={12} />
+          Production Control
+        </motion.div>
+        <h2 className="text-5xl font-black tracking-tighter uppercase italic">Create New Batch</h2>
+        <p className="text-muted-foreground mt-2 font-medium">Initialize garment production tracking with high-precision QR generation.</p>
       </header>
 
+      {error && (
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 text-sm font-bold"
+        >
+          <AlertCircle size={20} />
+          {error}
+        </motion.div>
+      )}
+
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden"
+        className="bg-white rounded-[2.5rem] border border-black/5 shadow-[0_32px_64px_-15px_rgba(0,0,0,0.1)] overflow-hidden"
       >
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500" />
+        
+        <form onSubmit={handleSubmit} className="p-10 md:p-16 space-y-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
             <InputGroup 
               label="Buyer Name" 
               icon={<User size={18} />}
@@ -139,15 +166,23 @@ export default function CreateBatch() {
             />
           </div>
 
-          <div className="pt-4 flex justify-end">
+          <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-black/5">
+            <div className="text-xs text-muted-foreground font-medium max-w-xs">
+              By generating this batch, you are authorizing the production start and initializing real-time tracking across all departments.
+            </div>
             <button 
               type="submit" 
               disabled={loading}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 disabled:opacity-50"
+              className="w-full md:w-auto bg-black hover:bg-emerald-600 text-white px-12 py-5 rounded-2xl font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-xl hover:shadow-emerald-500/20 active:scale-95 group"
             >
-              {loading ? 'Generating...' : (
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Processing...
+                </div>
+              ) : (
                 <>
-                  <Save size={20} />
+                  <Save size={20} className="group-hover:rotate-12 transition-transform" />
                   Generate Batch Card
                 </>
               )}
