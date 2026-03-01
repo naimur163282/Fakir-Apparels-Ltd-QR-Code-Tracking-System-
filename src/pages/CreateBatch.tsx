@@ -56,13 +56,13 @@ export default function CreateBatch() {
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold uppercase tracking-widest mb-4 border border-emerald-500/20"
+          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase tracking-widest mb-4 border border-indigo-100"
         >
           <Sparkles size={12} />
           Production Control
         </motion.div>
-        <h2 className="text-5xl font-black tracking-tighter uppercase italic">Create New Batch</h2>
-        <p className="text-muted-foreground mt-2 font-medium">Initialize garment production tracking with high-precision QR generation.</p>
+        <h2 className="text-5xl font-black tracking-tighter uppercase italic text-slate-900">Create New Batch</h2>
+        <p className="text-slate-500 mt-2 font-medium">Initialize garment production tracking with high-precision QR generation.</p>
       </header>
 
       {error && (
@@ -79,9 +79,9 @@ export default function CreateBatch() {
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-[2.5rem] border border-black/5 shadow-[0_32px_64px_-15px_rgba(0,0,0,0.1)] overflow-hidden"
+        className="bg-white rounded-[2.5rem] border border-slate-200 shadow-[0_32px_64px_-15px_rgba(0,0,0,0.05)] overflow-hidden"
       >
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500" />
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
         
         <form onSubmit={handleSubmit} className="p-10 md:p-16 space-y-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
@@ -135,12 +135,12 @@ export default function CreateBatch() {
               required
             />
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
                 <Tag size={18} />
                 Batch Type
               </label>
               <select 
-                className="w-full px-4 py-3 bg-black/[0.02] border border-black/5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 appearance-none cursor-pointer"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none cursor-pointer text-slate-700"
                 value={formData.batch_type}
                 onChange={(e) => setFormData({ ...formData, batch_type: e.target.value })}
                 required
@@ -154,26 +154,26 @@ export default function CreateBatch() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
               <FileText size={14} />
               Special Notes
             </label>
             <textarea 
-              className="w-full px-4 py-3 bg-black/[0.02] border border-black/5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 min-h-[120px]"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[120px] text-slate-700"
               placeholder="Add any specific instructions or quality requirements..."
               value={formData.special_notes}
               onChange={(e) => setFormData({ ...formData, special_notes: e.target.value })}
             />
           </div>
 
-          <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-black/5">
-            <div className="text-xs text-muted-foreground font-medium max-w-xs">
+          <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-slate-100">
+            <div className="text-xs text-slate-400 font-medium max-w-xs">
               By generating this batch, you are authorizing the production start and initializing real-time tracking across all departments.
             </div>
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full md:w-auto bg-black hover:bg-emerald-600 text-white px-12 py-5 rounded-2xl font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-xl hover:shadow-emerald-500/20 active:scale-95 group"
+              className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-5 rounded-2xl font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-xl hover:shadow-indigo-500/20 active:scale-95 group"
             >
               {loading ? (
                 <div className="flex items-center gap-2">
@@ -197,14 +197,14 @@ export default function CreateBatch() {
 function InputGroup({ label, icon, value, onChange, placeholder, type = "text", required = false }: any) {
   return (
     <div className="space-y-2">
-      <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+      <label className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
         {icon}
         {label}
       </label>
       <input 
         type={type}
         required={required}
-        className="w-full px-4 py-3 bg-black/[0.02] border border-black/5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-700 placeholder:text-slate-300"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}

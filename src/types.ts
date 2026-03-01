@@ -17,6 +17,10 @@ export interface Scan {
   status: string;
   location: string;
   worker_name: string;
+  machine_no?: string;
+  ok_qty?: number;
+  issued_qty?: number;
+  rejected_qty?: number;
   timestamp: string;
   style?: string;
   buyer?: string;

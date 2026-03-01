@@ -34,6 +34,10 @@ db.exec(`
     status TEXT,
     location TEXT,
     worker_name TEXT,
+    machine_no TEXT,
+    ok_qty INTEGER DEFAULT 0,
+    issued_qty INTEGER DEFAULT 0,
+    rejected_qty INTEGER DEFAULT 0,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     alert_sent INTEGER DEFAULT 0,
     FOREIGN KEY (batch_id) REFERENCES batches(id)
@@ -50,6 +54,26 @@ try {
   }
 } catch (error) {
   console.error("Migration error:", error);
+}
+
+// Migration: Add new columns to scans table if they don't exist
+try {
+  const scanTableInfo = db.prepare("PRAGMA table_info(scans)").all() as any[];
+  const columnsToAdd = [
+    { name: 'machine_no', type: 'TEXT' },
+    { name: 'ok_qty', type: 'INTEGER DEFAULT 0' },
+    { name: 'issued_qty', type: 'INTEGER DEFAULT 0' },
+    { name: 'rejected_qty', type: 'INTEGER DEFAULT 0' }
+  ];
+
+  for (const col of columnsToAdd) {
+    if (!scanTableInfo.some(c => c.name === col.name)) {
+      db.exec(`ALTER TABLE scans ADD COLUMN ${col.name} ${col.type}`);
+      console.log(`Migration: Added ${col.name} column to scans table.`);
+    }
+  }
+} catch (error) {
+  console.error("Migration error (scans):", error);
 }
 
 async function sendTelegramAlert(message: string) {
@@ -161,25 +185,30 @@ async function startServer() {
   });
 
   app.post("/api/scans", async (req, res) => {
-    const { batch_id, status, location, worker_name } = req.body;
+    const { batch_id, status, location, worker_name, machine_no, ok_qty, issued_qty, rejected_qty } = req.body;
     try {
       const stmt = db.prepare(`
-        INSERT INTO scans (batch_id, status, location, worker_name)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO scans (batch_id, status, location, worker_name, machine_no, ok_qty, issued_qty, rejected_qty)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `);
-      stmt.run(batch_id, status, location, worker_name);
+      stmt.run(batch_id, status, location, worker_name, machine_no || null, ok_qty || 0, issued_qty || 0, rejected_qty || 0);
 
       // Get style name for the alert
       const batch = db.prepare("SELECT style FROM batches WHERE id = ?").get(batch_id) as any;
       
       // Log to Telegram for permanent record
-      await sendTelegramAlert(
-        `📲 *NEW SCAN RECORDED*\n\n` +
+      let telegramMsg = `📲 *NEW SCAN RECORDED*\n\n` +
         `*Batch:* ${batch_id} (${batch?.style || 'Unknown'})\n` +
         `*Status:* ${status}\n` +
         `*Location:* ${location}\n` +
-        `*Worker:* ${worker_name}`
-      );
+        `*Worker:* ${worker_name}`;
+      
+      if (machine_no) telegramMsg += `\n*Machine:* ${machine_no}`;
+      if (ok_qty || rejected_qty) {
+        telegramMsg += `\n\n*QC STATS:*\n✅ OK: ${ok_qty}\n📦 Issued: ${issued_qty}\n❌ Rejected: ${rejected_qty}`;
+      }
+
+      await sendTelegramAlert(telegramMsg);
 
       res.status(201).json({ success: true });
     } catch (error) {
