@@ -18,6 +18,36 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
   const [uptime, setUptime] = useState('00:00:00');
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [selectedShift, setSelectedShift] = useState<'All' | 'Day' | 'Night'>('All');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [batchToDelete, setBatchToDelete] = useState<string | null>(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [workerName, setWorkerName] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      const [scansRes, batchesRes] = await Promise.all([
+        fetch('/api/scans'),
+        fetch('/api/batches')
+      ]);
+      
+      if (!scansRes.ok || !batchesRes.ok) {
+        throw new Error('Failed to fetch data from server');
+      }
+
+      const scansData = await scansRes.json();
+      const batchesData = await batchesRes.json();
+      
+      setScans(Array.isArray(scansData) ? scansData : []);
+      setBatches(Array.isArray(batchesData) ? batchesData : []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const startTime = Date.now();
@@ -63,6 +93,44 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
     const interval = setInterval(fetchData, 10000); // Refresh every 10s
     return () => clearInterval(interval);
   }, []);
+
+  const handleDeleteBatch = async () => {
+    if (!batchToDelete || !deleteReason || !workerName) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/batches/${batchToDelete}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: deleteReason, worker_name: workerName })
+      });
+      if (res.ok) {
+        setDeleteModalOpen(false);
+        setBatchToDelete(null);
+        setDeleteReason('');
+        setWorkerName('');
+        fetchData();
+      }
+    } catch (error) {
+      console.error('Error deleting batch:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleResetData = async () => {
+    setIsResetting(true);
+    try {
+      const res = await fetch('/api/admin/reset', { method: 'POST' });
+      if (res.ok) {
+        setResetModalOpen(false);
+        fetchData();
+      }
+    } catch (error) {
+      console.error('Error resetting data:', error);
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const filteredScans = scans.filter(scan => {
     const scanDate = format(new Date(scan.timestamp), 'yyyy-MM-dd');
@@ -384,6 +452,13 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
               Backup
             </a>
           </div>
+          <button 
+            onClick={() => setResetModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-3.5 bg-red-50 text-red-600 border border-red-100 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-sm"
+          >
+            <AlertTriangle size={14} />
+            Reset
+          </button>
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 group-focus-within:text-indigo-600 transition-colors" />
             <input 
@@ -945,6 +1020,15 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                         >
                           History
                         </button>
+                        <button 
+                          onClick={() => {
+                            setBatchToDelete(batch.id);
+                            setDeleteModalOpen(true);
+                          }}
+                          className="text-red-400 hover:text-red-600 text-sm font-bold"
+                        >
+                          Remove
+                        </button>
                       </td>
                     </tr>
                   );
@@ -1019,6 +1103,106 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                 className="px-6 py-2 bg-black text-white rounded-xl font-bold text-sm"
               >
                 Close History
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Delete Batch Modal */}
+      {deleteModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border border-slate-100"
+          >
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-4 bg-red-50 rounded-2xl text-red-600">
+                <AlertTriangle size={32} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black uppercase tracking-tighter italic text-slate-900">Remove Batch</h3>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">ID: {batchToDelete}</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Your Name</label>
+                <input 
+                  type="text"
+                  value={workerName}
+                  onChange={(e) => setWorkerName(e.target.value)}
+                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  placeholder="Enter your name"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Reason for Removal</label>
+                <textarea 
+                  value={deleteReason}
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all min-h-[100px]"
+                  placeholder="Why is this batch being removed?"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-4 mt-8">
+              <button 
+                onClick={() => setDeleteModalOpen(false)}
+                className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteBatch}
+                disabled={isDeleting || !deleteReason || !workerName}
+                className="flex-1 py-4 bg-red-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg shadow-red-200 disabled:opacity-50"
+              >
+                {isDeleting ? 'Removing...' : 'Confirm'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Reset System Modal */}
+      {resetModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border border-slate-100"
+          >
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-4 bg-red-600 rounded-2xl text-white">
+                <AlertTriangle size={32} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black uppercase tracking-tighter italic text-slate-900">Reset System</h3>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Warning: Irreversible Action</p>
+              </div>
+            </div>
+
+            <p className="text-sm font-bold text-slate-500 leading-relaxed">
+              This will permanently delete all batches and production records. This action cannot be undone. Are you absolutely sure?
+            </p>
+
+            <div className="flex gap-4 mt-8">
+              <button 
+                onClick={() => setResetModalOpen(false)}
+                className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleResetData}
+                disabled={isResetting}
+                className="flex-1 py-4 bg-red-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg shadow-red-200 disabled:opacity-50"
+              >
+                {isResetting ? 'Resetting...' : 'Yes, Reset All'}
               </button>
             </div>
           </motion.div>

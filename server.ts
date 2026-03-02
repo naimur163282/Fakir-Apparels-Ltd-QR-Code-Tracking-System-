@@ -72,6 +72,55 @@ async function startServer() {
     }
   });
 
+  app.delete("/api/batches/:id", async (req, res) => {
+    const { id } = req.params;
+    const { reason, worker_name } = req.body;
+    
+    try {
+      // 1. Record the deletion in scans as a log
+      await supabase
+        .from('scans')
+        .insert([{ 
+          batch_id: id, 
+          status: 'Batch Removed', 
+          location: 'System', 
+          worker_name: worker_name || 'Admin', 
+          special_notes: reason || 'No reason provided'
+        }]);
+
+      // 2. Delete the batch (Supabase should handle cascading if configured, but let's be safe)
+      // First delete scans
+      await supabase.from('scans').delete().eq('batch_id', id);
+      
+      // Then delete batch
+      const { error } = await supabase
+        .from('batches')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to delete batch" });
+    }
+  });
+
+  app.post("/api/admin/reset", async (req, res) => {
+    try {
+      // Delete all scans first due to FK
+      await supabase.from('scans').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      // Delete all batches
+      await supabase.from('batches').delete().neq('id', 'placeholder');
+      
+      res.json({ success: true, message: "All data cleared successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to reset data" });
+    }
+  });
+
   app.get("/api/batches", async (req, res) => {
     try {
       const { data, error } = await supabase
