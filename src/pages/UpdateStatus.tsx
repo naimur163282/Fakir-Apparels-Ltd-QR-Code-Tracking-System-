@@ -59,7 +59,8 @@ export default function UpdateStatus() {
     worker_name: '',
     ok_qty: '',
     issued_qty: '',
-    rejected_qty: ''
+    rejected_qty: '',
+    shift: 'Day' as 'Day' | 'Night'
   });
 
   useEffect(() => {
@@ -97,7 +98,8 @@ export default function UpdateStatus() {
           machine_no: formData.machineNo,
           ok_qty: Number(formData.ok_qty) || 0,
           issued_qty: Number(formData.issued_qty) || 0,
-          rejected_qty: Number(formData.rejected_qty) || 0
+          rejected_qty: Number(formData.rejected_qty) || 0,
+          shift: formData.shift
         })
       });
 
@@ -207,7 +209,31 @@ export default function UpdateStatus() {
           <div className="space-y-6">
             <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
-              1. Select Process
+              1. Select Shift
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {(['Day', 'Night'] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, shift: s })}
+                  className={cn(
+                    "px-4 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center transition-all border-2",
+                    formData.shift === s 
+                      ? "bg-slate-900 border-slate-900 text-white shadow-xl scale-[1.02]" 
+                      : "bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100"
+                  )}
+                >
+                  {s} Shift
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
+              2. Select Process
             </label>
             <div className="grid grid-cols-2 gap-3">
               {PROCESSES.map((proc) => (
@@ -231,7 +257,7 @@ export default function UpdateStatus() {
           <div className="space-y-6">
             <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
-              2. Current Status
+              3. Current Status
             </label>
             <div className="grid grid-cols-3 gap-3">
               {SUB_STATUSES.map((sub) => (
@@ -255,7 +281,7 @@ export default function UpdateStatus() {
           <div className="space-y-3">
             <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
-              3. Current Area
+              4. Current Area
             </label>
             <div className="relative">
               <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -347,7 +373,7 @@ export default function UpdateStatus() {
           <div className="space-y-3">
             <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
-              4. Worker Name / ID
+              5. Worker Name / ID
             </label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />

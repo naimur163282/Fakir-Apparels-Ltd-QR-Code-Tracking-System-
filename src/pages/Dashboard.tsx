@@ -16,6 +16,8 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'telemetry' | 'grid' | 'inventory'>('telemetry');
   const [uptime, setUptime] = useState('00:00:00');
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [selectedShift, setSelectedShift] = useState<'All' | 'Day' | 'Night'>('All');
 
   useEffect(() => {
     const startTime = Date.now();
@@ -56,17 +58,34 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
     return () => clearInterval(interval);
   }, []);
 
-  const filteredScans = scans.filter(scan => 
-    (scan.style?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-     scan.batch_id.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    (filterStatus === 'All' || scan.status.includes(filterStatus))
-  );
+  const filteredScans = scans.filter(scan => {
+    const scanDate = format(new Date(scan.timestamp), 'yyyy-MM-dd');
+    const matchesDate = scanDate === selectedDate;
+    const matchesShift = selectedShift === 'All' || scan.shift === selectedShift;
+    const matchesSearch = (scan.style?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          scan.batch_id.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesStatus = (filterStatus === 'All' || scan.status.includes(filterStatus));
+    
+    return matchesDate && matchesShift && matchesSearch && matchesStatus;
+  });
 
-  const filteredBatches = batches.filter(batch => 
-    batch.style.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    batch.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    batch.buyer.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredBatches = batches.filter(batch => {
+    const matchesSearch = batch.style.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          batch.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          batch.buyer.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Only show batches that have scans in the selected date/shift if not in inventory mode
+    if (viewMode !== 'inventory') {
+      const hasScans = scans.some(s => 
+        s.batch_id === batch.id && 
+        format(new Date(s.timestamp), 'yyyy-MM-dd') === selectedDate &&
+        (selectedShift === 'All' || s.shift === selectedShift)
+      );
+      return matchesSearch && hasScans;
+    }
+    
+    return matchesSearch;
+  });
 
   const statuses = ['All', 'Wash', 'Hydro', 'Dryer', 'Quality', 'Acid'];
 
@@ -158,16 +177,21 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
         <div className="h-4 w-[1px] bg-white/10 shrink-0" />
         <div className="flex items-center gap-6 shrink-0">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Total Output:</span>
-            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{batches.reduce((acc, b) => acc + b.quantity, 0).toLocaleString()} PCS</span>
+            <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Selected Output:</span>
+            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+              {filteredScans
+                .filter(s => s.status.includes('Quality Check') && s.status.includes('End'))
+                .reduce((acc, s) => acc + (s.ok_qty || 0), 0)
+                .toLocaleString()} PCS
+            </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Active Lines:</span>
-            <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest">04</span>
+            <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Shift:</span>
+            <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest">{selectedShift}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Efficiency:</span>
-            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">94.2%</span>
+            <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Date:</span>
+            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">{selectedDate}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Uptime:</span>
@@ -228,6 +252,25 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
           </div>
 
           <div className="flex items-center gap-2 p-1 bg-white border border-slate-200 rounded-2xl shadow-sm">
+            <input 
+              type="date" 
+              className="px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-slate-700 bg-transparent focus:outline-none"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+            />
+            <div className="h-6 w-[1px] bg-slate-200" />
+            <select 
+              className="px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-slate-700 bg-transparent focus:outline-none appearance-none cursor-pointer"
+              value={selectedShift}
+              onChange={(e) => setSelectedShift(e.target.value as any)}
+            >
+              <option value="All">All Shifts</option>
+              <option value="Day">Day Shift</option>
+              <option value="Night">Night Shift</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 p-1 bg-white border border-slate-200 rounded-2xl shadow-sm">
             <a 
               href="/api/backup" 
               download 
@@ -263,10 +306,18 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
       {viewMode === 'telemetry' && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard label="Active Batches" value={batches.length} icon={<Package className="text-indigo-500" />} trend="+12%" />
-            <StatCard label="Scans (24h)" value={scans.filter(s => new Date(s.timestamp).toDateString() === new Date().toDateString()).length} icon={<Zap className="text-amber-500" />} trend="Active" />
+            <StatCard 
+              label="Shift Production" 
+              value={filteredScans
+                .filter(s => s.status.includes('Quality Check') && s.status.includes('End'))
+                .reduce((acc, s) => acc + (s.ok_qty || 0), 0)
+                .toLocaleString()} 
+              icon={<Package className="text-indigo-500" />} 
+              trend={selectedShift !== 'All' ? `${selectedShift} Shift` : "Daily Total"} 
+            />
+            <StatCard label="Active Batches" value={filteredBatches.length} icon={<Zap className="text-amber-500" />} trend="Filtered" />
             <StatCard label="System Integrity" value="99.9%" icon={<ShieldCheck className="text-emerald-500" />} trend="Secure" />
-            <StatCard label="Global Sync" value="Live" icon={<Globe className="text-pink-500" />} trend="0.2ms" />
+            <StatCard label="Database" value="Cloud" icon={<Globe className="text-pink-500" />} trend="Supabase" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -359,8 +410,8 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                   </h3>
                 </div>
                 <div className="space-y-8">
-                  <HealthItem label="Database Engine" status="Healthy" time="SQLite V3" />
-                  <HealthItem label="Telegram Gateway" status={process.env.TELEGRAM_BOT_TOKEN ? "Active" : "Offline"} time="Bot API V7" />
+                  <HealthItem label="Database Engine" status="Healthy" time="Supabase Cloud" />
+                  <HealthItem label="Google Sheets" status="Active" time="Apps Script Sync" />
                   <HealthItem label="Network Latency" status="Optimal" time="0.12ms" />
                   
                   <div className="pt-8 border-t-2 border-dashed border-black/5">

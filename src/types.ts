@@ -21,6 +21,7 @@ export interface Scan {
   ok_qty?: number;
   issued_qty?: number;
   rejected_qty?: number;
+  shift?: 'Day' | 'Night';
   timestamp: string;
   style?: string;
   buyer?: string;

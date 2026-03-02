@@ -91,7 +91,7 @@ async function startServer() {
   });
 
   app.post("/api/scans", async (req, res) => {
-    const { batch_id, status, location, worker_name, machine_no, ok_qty, issued_qty, rejected_qty } = req.body;
+    const { batch_id, status, location, worker_name, machine_no, ok_qty, issued_qty, rejected_qty, shift } = req.body;
     try {
       const { error } = await supabase
         .from('scans')
@@ -103,14 +103,15 @@ async function startServer() {
           machine_no: machine_no || null, 
           ok_qty: ok_qty || 0, 
           issued_qty: issued_qty || 0, 
-          rejected_qty: rejected_qty || 0 
+          rejected_qty: rejected_qty || 0,
+          shift: shift || 'Day'
         }]);
 
       if (error) throw error;
 
       // Sync to Google Sheets
       await syncToGoogleSheets('scan', {
-        batch_id, status, location, worker_name, machine_no, ok_qty, issued_qty, rejected_qty,
+        batch_id, status, location, worker_name, machine_no, ok_qty, issued_qty, rejected_qty, shift,
         timestamp: new Date().toISOString()
       });
 
