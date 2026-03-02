@@ -136,6 +136,44 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   };
 
+  const getWeeklyTrendData = () => {
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return format(d, 'yyyy-MM-dd');
+    }).reverse();
+
+    return last7Days.map(date => {
+      const dayScans = scans.filter(s => 
+        format(new Date(s.timestamp), 'yyyy-MM-dd') === date &&
+        s.status.includes('Quality Check') && 
+        s.status.includes('End')
+      );
+      const totalOk = dayScans.reduce((acc, s) => acc + (s.ok_qty || 0), 0);
+      return {
+        date: format(new Date(date), 'MMM dd'),
+        output: totalOk
+      };
+    });
+  };
+
+  const getWorkerLeaderboard = () => {
+    const workerStats: Record<string, { count: number, ok: number }> = {};
+    
+    scans.forEach(scan => {
+      if (!workerStats[scan.worker_name]) {
+        workerStats[scan.worker_name] = { count: 0, ok: 0 };
+      }
+      workerStats[scan.worker_name].count++;
+      workerStats[scan.worker_name].ok += (scan.ok_qty || 0);
+    });
+
+    return Object.entries(workerStats)
+      .map(([name, stats]) => ({ name, ...stats }))
+      .sort((a, b) => b.ok - a.ok)
+      .slice(0, 5);
+  };
+
   const isDelayed = (scan: Scan) => {
     if (!scan.status.includes('Waiting')) return false;
     if (!scan.status.includes('Hydro') && !scan.status.includes('Dryer')) return false;
@@ -328,13 +366,46 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                   <div>
                     <h3 className="font-black text-2xl uppercase tracking-tighter italic flex items-center gap-3 text-slate-900">
                       <BarChart3 className="w-6 h-6 text-indigo-600" />
-                      Process Telemetry
+                      Weekly Output Trend
                     </h3>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Batch distribution across departments</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Total OK Garments (Last 7 Days)</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Real-time Feed</span>
+                </div>
+                <div className="h-72 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={getWeeklyTrendData()}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                      <XAxis 
+                        dataKey="date" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fontSize: 10, fontWeight: 800 }} 
+                      />
+                      <YAxis 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fontSize: 10, fontWeight: 800 }} 
+                      />
+                      <Tooltip 
+                        cursor={{ fill: '#f8f8f8' }}
+                        contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '16px' }}
+                        itemStyle={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '10px' }}
+                      />
+                      <Bar dataKey="output" radius={[10, 10, 0, 0]} barSize={40} fill="#4f46e5" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-[0_32px_64px_-15px_rgba(0,0,0,0.05)] relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-emerald-600" />
+                <div className="flex items-center justify-between mb-10">
+                  <div>
+                    <h3 className="font-black text-2xl uppercase tracking-tighter italic flex items-center gap-3 text-slate-900">
+                      <BarChart3 className="w-6 h-6 text-emerald-600" />
+                      Process Distribution
+                    </h3>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Active batches per department</p>
                   </div>
                 </div>
                 <div className="h-72 w-full">
@@ -414,6 +485,29 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                   <HealthItem label="Google Sheets" status="Active" time="Apps Script Sync" />
                   <HealthItem label="Network Latency" status="Optimal" time="0.12ms" />
                   
+                  <div className="pt-8 border-t-2 border-dashed border-black/5">
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4">Operator Leaderboard (Top 5)</p>
+                    <div className="space-y-3">
+                      {getWorkerLeaderboard().map((worker, idx) => (
+                        <div key={worker.name} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                          <div className="flex items-center gap-3">
+                            <div className="w-6 h-6 bg-slate-900 text-white rounded-full flex items-center justify-center text-[10px] font-black">
+                              {idx + 1}
+                            </div>
+                            <span className="text-xs font-black uppercase tracking-tight text-slate-700">{worker.name}</span>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] font-black text-indigo-600">{worker.ok.toLocaleString()} PCS</p>
+                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{worker.count} SCANS</p>
+                          </div>
+                        </div>
+                      ))}
+                      {getWorkerLeaderboard().length === 0 && (
+                        <p className="text-xs font-medium text-slate-400 italic text-center py-4">No operator data available.</p>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="pt-8 border-t-2 border-dashed border-black/5">
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4">Master Clock</p>
                     <div className="flex items-center justify-between bg-slate-900 text-white p-6 rounded-3xl shadow-xl">
