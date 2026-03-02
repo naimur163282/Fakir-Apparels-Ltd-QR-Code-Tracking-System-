@@ -20,15 +20,24 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function syncToGoogleSheets(type: 'batch' | 'scan', data: any) {
-  const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
-  if (!scriptUrl) return;
+  const scriptUrl = process.env.GOOGLE_SCRIPT_URL || "https://script.google.com/macros/s/AKfycbx8ZFe6ySakOHisWomYdV9Hw3z0wqp5RpO26-ZKUIiTboyxmO0A8_S1A2nGx4u71k8/exec";
+  if (!scriptUrl) {
+    console.warn("Google Sheets sync skipped: GOOGLE_SCRIPT_URL is not set.");
+    return;
+  }
 
   try {
-    await fetch(scriptUrl, {
+    const response = await fetch(scriptUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type, data })
     });
+    
+    if (!response.ok) {
+      console.error(`Google Sheets sync failed with status: ${response.status}`);
+    } else {
+      console.log(`Google Sheets sync successful for ${type}`);
+    }
   } catch (error) {
     console.error("Google Sheets sync error:", error);
   }
