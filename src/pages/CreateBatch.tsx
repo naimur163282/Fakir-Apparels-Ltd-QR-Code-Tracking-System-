@@ -81,10 +81,13 @@ export default function CreateBatch() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white rounded-[2.5rem] border border-slate-200 shadow-[0_32px_64px_-15px_rgba(0,0,0,0.05)] overflow-hidden"
       >
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-emerald-500 to-amber-500" />
         
-        <form onSubmit={handleSubmit} className="p-10 md:p-16 space-y-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+        <form onSubmit={handleSubmit} className="p-10 md:p-16 space-y-10 relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full -mr-32 -mt-32 opacity-50 blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-50 rounded-full -ml-32 -mb-32 opacity-50 blur-3xl pointer-events-none" />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 relative z-10">
             <InputGroup 
               label="Buyer Name" 
               icon={<User size={18} />}
@@ -173,7 +176,7 @@ export default function CreateBatch() {
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-5 rounded-2xl font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-xl hover:shadow-indigo-500/20 active:scale-95 group"
+              className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-5 rounded-2xl font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-[0_20px_40px_-10px_rgba(79,70,229,0.4)] hover:shadow-indigo-500/60 active:scale-95 group"
             >
               {loading ? (
                 <div className="flex items-center gap-2">
@@ -196,15 +199,17 @@ export default function CreateBatch() {
 
 function InputGroup({ label, icon, value, onChange, placeholder, type = "text", required = false }: any) {
   return (
-    <div className="space-y-2">
-      <label className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
-        {icon}
+    <div className="space-y-2 group">
+      <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 group-focus-within:text-indigo-600 transition-colors">
+        <div className="p-1.5 bg-slate-50 rounded-lg group-focus-within:bg-indigo-50 group-focus-within:text-indigo-600 transition-colors">
+          {icon}
+        </div>
         {label}
       </label>
       <input 
         type={type}
         required={required}
-        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-700 placeholder:text-slate-300"
+        className="w-full px-5 py-4 bg-slate-50 border-2 border-transparent rounded-2xl text-sm font-bold focus:outline-none focus:bg-white focus:border-indigo-600/20 focus:ring-4 focus:ring-indigo-500/5 text-slate-700 placeholder:text-slate-300 transition-all"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}

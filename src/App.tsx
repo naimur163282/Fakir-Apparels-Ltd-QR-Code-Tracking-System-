@@ -12,10 +12,10 @@ export default function App() {
     <Router>
       <div className="min-h-screen bg-[#F8FAFC] text-[#1E293B] font-sans">
         {/* Navigation Sidebar */}
-        <nav className="fixed left-0 top-0 h-full w-64 bg-white border-r-[3px] border-slate-900 z-50 hidden md:flex flex-col">
-          <div className="p-8 border-b-[3px] border-slate-900 bg-slate-50">
-            <h1 className="text-2xl font-black tracking-tighter flex items-center gap-3 text-slate-900 italic uppercase">
-              <div className="p-2 bg-slate-900 text-white">
+        <nav className="fixed left-0 top-0 h-full w-64 bg-slate-900 border-r-[3px] border-slate-900 z-50 hidden md:flex flex-col text-white">
+          <div className="p-8 border-b-[3px] border-white/10 bg-slate-950">
+            <h1 className="text-2xl font-black tracking-tighter flex items-center gap-3 text-white italic uppercase">
+              <div className="p-2 bg-indigo-600 text-white shadow-[4px_4px_0_0_rgba(255,255,255,0.2)]">
                 <QrCode className="w-6 h-6" />
               </div>
               Fakir
@@ -23,27 +23,27 @@ export default function App() {
           </div>
           
           <div className="flex-1 px-4 py-8 space-y-3">
-            <NavLink to="/" icon={<LayoutDashboard size={20} />} label="Dashboard" />
-            <NavLink to="/create" icon={<PlusCircle size={20} />} label="New Batch" />
-            <NavLink to="/batches" icon={<ClipboardList size={20} />} label="All Batches" />
-            <NavLink to="/settings" icon={<Settings size={20} />} label="Settings" />
+            <NavLink to="/" icon={<LayoutDashboard size={20} />} label="Dashboard" activeColor="bg-indigo-600 shadow-indigo-500/40" />
+            <NavLink to="/create" icon={<PlusCircle size={20} />} label="New Batch" activeColor="bg-emerald-600 shadow-emerald-500/40" />
+            <NavLink to="/batches" icon={<ClipboardList size={20} />} label="All Batches" activeColor="bg-amber-500 shadow-amber-500/40" />
+            <NavLink to="/settings" icon={<Settings size={20} />} label="Settings" activeColor="bg-purple-600 shadow-purple-500/40" />
             <div className="pt-4 px-5">
-              <div className="p-4 bg-emerald-50 border-[3px] border-slate-900 shadow-[4px_4px_0_0_rgba(16,185,129,1)]">
+              <div className="p-4 bg-emerald-500/10 border-[3px] border-emerald-500/20 shadow-[4px_4px_0_0_rgba(16,185,129,0.3)] rounded-xl">
                 <div className="flex items-center gap-3 mb-2">
-                  <TableIcon size={16} className="text-emerald-600" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Sheets Sync</span>
+                  <TableIcon size={16} className="text-emerald-400" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Sheets Sync</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[9px] font-bold text-emerald-700 uppercase tracking-widest">Connected</span>
+                  <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Connected</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="p-4 border-t-[3px] border-slate-900">
-            <div className="flex items-center gap-3 p-4 bg-slate-900 text-white border-[3px] border-slate-900 shadow-[4px_4px_0_0_rgba(79,70,229,1)]">
-              <div className="w-10 h-10 bg-indigo-600 text-white flex items-center justify-center">
+          <div className="p-4 border-t-[3px] border-white/10">
+            <div className="flex items-center gap-3 p-4 bg-white/5 text-white border-[3px] border-white/10 shadow-[4px_4px_0_0_rgba(79,70,229,0.3)] rounded-2xl">
+              <div className="w-10 h-10 bg-indigo-600 text-white flex items-center justify-center rounded-xl">
                 <UserIcon size={20} />
               </div>
               <div className="flex-1 min-w-0">
@@ -56,11 +56,11 @@ export default function App() {
             </div>
           </div>
 
-          <div className="p-8 border-t-[3px] border-slate-900 bg-slate-50">
-            <p className="text-[10px] text-slate-400 uppercase tracking-[0.3em] font-black">System Status</p>
+          <div className="p-8 border-t-[3px] border-white/10 bg-slate-950">
+            <p className="text-[10px] text-white/40 uppercase tracking-[0.3em] font-black">System Status</p>
             <div className="mt-4 flex items-center gap-3">
-              <div className="w-2.5 h-2.5 bg-emerald-500 animate-pulse border border-emerald-900" />
-              <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest italic">Live Sync Active</span>
+              <div className="w-2.5 h-2.5 bg-emerald-500 animate-pulse border border-emerald-400" />
+              <span className="text-[11px] font-black text-white uppercase tracking-widest italic">Live Sync Active</span>
             </div>
           </div>
         </nav>
@@ -134,7 +134,7 @@ function MarqueeItem({ text, isAlert = false }: { text: string, isAlert?: boolea
   );
 }
 
-function NavLink({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
+function NavLink({ to, icon, label, activeColor = "bg-indigo-600" }: { to: string; icon: React.ReactNode; label: string; activeColor?: string }) {
   const location = useLocation();
   const isActive = location.pathname === to;
 
@@ -142,10 +142,10 @@ function NavLink({ to, icon, label }: { to: string; icon: React.ReactNode; label
     <Link
       to={to}
       className={cn(
-        "flex items-center gap-3 px-5 py-4 transition-all duration-200 font-black text-[10px] uppercase tracking-[0.2em] italic",
+        "flex items-center gap-3 px-5 py-4 transition-all duration-200 font-black text-[10px] uppercase tracking-[0.2em] italic rounded-xl",
         isActive 
-          ? "bg-indigo-600 text-white shadow-[4px_4px_0_0_rgba(15,23,42,1)] translate-x-1" 
-          : "text-slate-500 hover:bg-slate-50 hover:text-indigo-600"
+          ? `${activeColor} text-white shadow-[4px_4px_0_0_rgba(255,255,255,0.1)] translate-x-1` 
+          : "text-white/50 hover:bg-white/5 hover:text-white"
       )}
     >
       {icon}

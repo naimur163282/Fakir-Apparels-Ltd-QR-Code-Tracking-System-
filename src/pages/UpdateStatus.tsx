@@ -236,21 +236,32 @@ export default function UpdateStatus() {
               2. Select Process
             </label>
             <div className="grid grid-cols-2 gap-3">
-              {PROCESSES.map((proc) => (
-                <button
-                  key={proc}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, process: proc })}
-                  className={cn(
-                    "px-4 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center transition-all border-2",
-                    formData.process === proc 
-                      ? "bg-indigo-600 border-indigo-600 text-white shadow-xl scale-[1.02]" 
-                      : "bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100"
-                  )}
-                >
-                  {proc}
-                </button>
-              ))}
+              {PROCESSES.map((proc, idx) => {
+                const colors = [
+                  "bg-blue-600 border-blue-600 shadow-blue-200",
+                  "bg-emerald-600 border-emerald-600 shadow-emerald-200",
+                  "bg-amber-500 border-amber-500 shadow-amber-200",
+                  "bg-red-500 border-red-500 shadow-red-200",
+                  "bg-purple-600 border-purple-600 shadow-purple-200",
+                  "bg-pink-600 border-pink-600 shadow-pink-200"
+                ];
+                const selectedColor = colors[idx % colors.length];
+                return (
+                  <button
+                    key={proc}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, process: proc })}
+                    className={cn(
+                      "px-4 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center transition-all border-2",
+                      formData.process === proc 
+                        ? `${selectedColor} text-white shadow-xl scale-[1.02]` 
+                        : "bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100"
+                    )}
+                  >
+                    {proc}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -260,21 +271,29 @@ export default function UpdateStatus() {
               3. Current Status
             </label>
             <div className="grid grid-cols-3 gap-3">
-              {SUB_STATUSES.map((sub) => (
-                <button
-                  key={sub}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, subStatus: sub })}
-                  className={cn(
-                    "px-4 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center transition-all border-2",
-                    formData.subStatus === sub 
-                      ? "bg-emerald-600 border-emerald-600 text-white shadow-xl scale-[1.02]" 
-                      : "bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100"
-                  )}
-                >
-                  {sub}
-                </button>
-              ))}
+              {SUB_STATUSES.map((sub, idx) => {
+                const colors = [
+                  "bg-amber-400 border-amber-400 shadow-amber-100",
+                  "bg-blue-500 border-blue-500 shadow-blue-100",
+                  "bg-emerald-600 border-emerald-600 shadow-emerald-100"
+                ];
+                const selectedColor = colors[idx % colors.length];
+                return (
+                  <button
+                    key={sub}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, subStatus: sub })}
+                    className={cn(
+                      "px-4 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center transition-all border-2",
+                      formData.subStatus === sub 
+                        ? `${selectedColor} text-white shadow-xl scale-[1.02]` 
+                        : "bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100"
+                    )}
+                  >
+                    {sub}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

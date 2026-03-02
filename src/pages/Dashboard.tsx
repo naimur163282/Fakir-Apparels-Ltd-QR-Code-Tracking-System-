@@ -149,7 +149,9 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
       return format(d, 'yyyy-MM-dd');
     }).reverse();
 
-    return last7Days.map(date => {
+    const colors = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
+
+    return last7Days.map((date, idx) => {
       const dayScans = scans.filter(s => 
         format(new Date(s.timestamp), 'yyyy-MM-dd') === date &&
         s.status.includes('Quality Check') && 
@@ -158,7 +160,8 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
       const totalOk = dayScans.reduce((acc, s) => acc + (s.ok_qty || 0), 0);
       return {
         date: format(new Date(date), 'MMM dd'),
-        output: totalOk
+        output: totalOk,
+        fill: colors[idx % colors.length]
       };
     });
   };
@@ -174,8 +177,10 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
       workerStats[scan.worker_name].ok += (scan.ok_qty || 0);
     });
 
+    const colors = ['bg-indigo-600', 'bg-emerald-600', 'bg-amber-500', 'bg-pink-500', 'bg-purple-600'];
+
     return Object.entries(workerStats)
-      .map(([name, stats]) => ({ name, ...stats }))
+      .map(([name, stats], idx) => ({ name, ...stats, color: colors[idx % colors.length] }))
       .sort((a, b) => b.ok - a.ok)
       .slice(0, 5);
   };
@@ -213,16 +218,16 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
   return (
     <div className="space-y-10 pb-20">
       {/* Global Stats Bar */}
-      <div className="bg-slate-900 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 flex items-center gap-8 overflow-x-auto no-scrollbar border-b border-white/5">
+      <div className="bg-slate-950 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 flex items-center gap-8 overflow-x-auto no-scrollbar border-b border-white/10 shadow-2xl">
         <div className="flex items-center gap-2 shrink-0">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">System Online</span>
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+          <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">System Online</span>
         </div>
         <div className="h-4 w-[1px] bg-white/10 shrink-0" />
         <div className="flex items-center gap-6 shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Selected Output:</span>
-            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-2 py-0.5 rounded">
               {filteredScans
                 .filter(s => s.status.includes('Quality Check') && s.status.includes('End'))
                 .reduce((acc, s) => acc + (s.ok_qty || 0), 0)
@@ -231,15 +236,15 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Shift:</span>
-            <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest">{selectedShift}</span>
+            <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded">{selectedShift}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Date:</span>
-            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">{selectedDate}</span>
+            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded">{selectedDate}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Uptime:</span>
-            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest font-mono">{uptime}</span>
+            <span className="text-[10px] font-black text-pink-400 uppercase tracking-widest font-mono bg-pink-500/10 px-2 py-0.5 rounded">{uptime}</span>
           </div>
         </div>
         <div className="ml-auto flex items-center gap-4 shrink-0">
@@ -356,12 +361,31 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                 .filter(s => s.status.includes('Quality Check') && s.status.includes('End'))
                 .reduce((acc, s) => acc + (s.ok_qty || 0), 0)
                 .toLocaleString()} 
-              icon={<Package className="text-indigo-500" />} 
+              icon={<Package className="text-white" />} 
               trend={selectedShift !== 'All' ? `${selectedShift} Shift` : "Daily Total"} 
+              color="bg-indigo-600"
             />
-            <StatCard label="Active Batches" value={filteredBatches.length} icon={<Zap className="text-amber-500" />} trend="Filtered" />
-            <StatCard label="System Integrity" value="99.9%" icon={<ShieldCheck className="text-emerald-500" />} trend="Secure" />
-            <StatCard label="Database" value="Cloud" icon={<Globe className="text-pink-500" />} trend="Supabase" />
+            <StatCard 
+              label="Active Batches" 
+              value={filteredBatches.length} 
+              icon={<Zap className="text-white" />} 
+              trend="Filtered" 
+              color="bg-amber-500"
+            />
+            <StatCard 
+              label="System Integrity" 
+              value="99.9%" 
+              icon={<ShieldCheck className="text-white" />} 
+              trend="Secure" 
+              color="bg-emerald-500"
+            />
+            <StatCard 
+              label="Database" 
+              value="Cloud" 
+              icon={<Globe className="text-white" />} 
+              trend="Supabase" 
+              color="bg-pink-500"
+            />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -397,7 +421,11 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                         contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '16px' }}
                         itemStyle={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '10px' }}
                       />
-                      <Bar dataKey="output" radius={[10, 10, 0, 0]} barSize={40} fill="#4f46e5" />
+                      <Bar dataKey="output" radius={[10, 10, 0, 0]} barSize={40}>
+                        {getWeeklyTrendData().map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -497,13 +525,13 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                       {getWorkerLeaderboard().map((worker, idx) => (
                         <div key={worker.name} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
                           <div className="flex items-center gap-3">
-                            <div className="w-6 h-6 bg-slate-900 text-white rounded-full flex items-center justify-center text-[10px] font-black">
+                            <div className={cn("w-6 h-6 text-white rounded-full flex items-center justify-center text-[10px] font-black", worker.color)}>
                               {idx + 1}
                             </div>
                             <span className="text-xs font-black uppercase tracking-tight text-slate-700">{worker.name}</span>
                           </div>
                           <div className="text-right">
-                            <p className="text-[10px] font-black text-indigo-600">{worker.ok.toLocaleString()} PCS</p>
+                            <p className={cn("text-[10px] font-black", worker.color.replace('bg-', 'text-'))}>{worker.ok.toLocaleString()} PCS</p>
                             <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{worker.count} SCANS</p>
                           </div>
                         </div>
@@ -581,15 +609,20 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[1200px]">
               <thead>
-                <tr className="bg-slate-50 text-[10px] uppercase tracking-[0.2em] font-black text-slate-400">
-                  <th className="px-6 py-5 border-r border-slate-100 sticky left-0 bg-slate-50 z-10">Batch Details</th>
-                  <th className="px-6 py-5 text-center border-r border-slate-100">Qty</th>
-                  {PROCESS_STEPS.map(step => (
-                    <th key={step.id} className="px-6 py-5 text-center border-r border-slate-200">{step.label}</th>
-                  ))}
-                  <th className="px-6 py-5 text-center border-r border-slate-200">QC Stats</th>
-                  <th className="px-6 py-5 text-center border-r border-slate-200">Final Status</th>
-                  <th className="px-6 py-5 text-center">Action</th>
+                <tr className="bg-slate-950 text-[10px] uppercase tracking-[0.2em] font-black text-white/40">
+                  <th className="px-6 py-5 border-r border-white/10 sticky left-0 bg-slate-950 z-10">Batch Details</th>
+                  <th className="px-6 py-5 text-center border-r border-white/10">Qty</th>
+                  {PROCESS_STEPS.map((step, idx) => {
+                    const colors = ['text-blue-400', 'text-emerald-400', 'text-amber-400', 'text-red-400', 'text-purple-400', 'text-pink-400', 'text-cyan-400'];
+                    return (
+                      <th key={step.id} className={cn("px-6 py-5 text-center border-r border-white/10", colors[idx % colors.length])}>
+                        {step.label}
+                      </th>
+                    );
+                  })}
+                  <th className="px-6 py-5 text-center border-r border-white/10 text-emerald-400">QC Stats</th>
+                  <th className="px-6 py-5 text-center border-r border-white/10 text-indigo-400">Final Status</th>
+                  <th className="px-6 py-5 text-center text-white">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -854,20 +887,37 @@ function HealthItem({ label, status, time }: { label: string, status: string, ti
   );
 }
 
-function StatCard({ label, value, trend, icon }: { label: string, value: string | number, trend?: string, icon: React.ReactNode }) {
+function StatCard({ label, value, trend, icon, color = "bg-white" }: { label: string, value: string | number, trend?: string, icon: React.ReactNode, color?: string }) {
+  const isDark = color !== "bg-white";
   return (
-    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all group overflow-hidden relative">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full -mr-16 -mt-16 transition-all group-hover:scale-150 group-hover:bg-indigo-50" />
+    <div className={cn(
+      "p-8 rounded-[2.5rem] border shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all group overflow-hidden relative",
+      isDark ? `${color} border-transparent text-white` : "bg-white border-slate-200 text-slate-900"
+    )}>
+      <div className={cn(
+        "absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16 transition-all group-hover:scale-150",
+        isDark ? "bg-white/10" : "bg-slate-50 group-hover:bg-indigo-50"
+      )} />
       <div className="flex items-center justify-between mb-6 relative z-10">
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{label}</span>
-        <div className="p-3 bg-slate-50 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-inner">{icon}</div>
+        <span className={cn(
+          "text-[10px] font-black uppercase tracking-[0.2em]",
+          isDark ? "text-white/60" : "text-slate-400"
+        )}>{label}</span>
+        <div className={cn(
+          "p-3 rounded-2xl transition-all shadow-inner",
+          isDark ? "bg-white/20 text-white" : "bg-slate-50 group-hover:bg-indigo-600 group-hover:text-white"
+        )}>{icon}</div>
       </div>
       <div className="flex items-end justify-between relative z-10">
-        <span className="text-5xl font-black tracking-tighter italic text-slate-900">{value}</span>
+        <span className="text-5xl font-black tracking-tighter italic">{value}</span>
         {trend && (
           <span className={cn(
             "text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-sm",
-            trend.includes('+') || trend === "Active" || trend === "Secure" ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-indigo-50 text-indigo-600 border border-indigo-100"
+            isDark 
+              ? "bg-white/20 text-white border border-white/10" 
+              : trend.includes('+') || trend === "Active" || trend === "Secure" 
+                ? "bg-emerald-50 text-emerald-600 border border-emerald-100" 
+                : "bg-indigo-50 text-indigo-600 border border-indigo-100"
           )}>
             {trend}
           </span>
@@ -890,11 +940,11 @@ function getStatusColor(status: string) {
 
 function getStatusBadgeColor(status: string) {
   const s = status.toLowerCase();
-  if (s.includes('wash') && !s.includes('acid')) return 'bg-blue-100 text-blue-700';
-  if (s.includes('hydro')) return 'bg-amber-100 text-amber-700';
-  if (s.includes('dryer')) return 'bg-red-100 text-red-700';
-  if (s.includes('quality')) return 'bg-emerald-100 text-emerald-700';
-  if (s.includes('acid')) return 'bg-purple-100 text-purple-700';
-  if (s.includes('creating')) return 'bg-slate-100 text-slate-700';
-  return 'bg-slate-100 text-slate-600';
+  if (s.includes('wash') && !s.includes('acid')) return 'bg-blue-600 text-white border-blue-700 shadow-blue-200';
+  if (s.includes('hydro')) return 'bg-amber-500 text-white border-amber-600 shadow-amber-200';
+  if (s.includes('dryer')) return 'bg-red-500 text-white border-red-600 shadow-red-200';
+  if (s.includes('quality')) return 'bg-emerald-600 text-white border-emerald-700 shadow-emerald-200';
+  if (s.includes('acid')) return 'bg-purple-600 text-white border-purple-700 shadow-purple-200';
+  if (s.includes('creating')) return 'bg-slate-900 text-white border-slate-950 shadow-slate-200';
+  return 'bg-slate-100 text-slate-600 border-slate-200 shadow-none';
 }

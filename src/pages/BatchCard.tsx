@@ -101,14 +101,14 @@ export default function BatchCard() {
           </button>
           <button 
             onClick={downloadQR}
-            className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm text-slate-700"
+            className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-amber-500 hover:text-white transition-all shadow-sm text-slate-700"
           >
             <Download size={16} />
             QR
           </button>
           <button 
             onClick={handlePrint}
-            className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm text-slate-700"
+            className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all shadow-sm text-slate-700"
           >
             <Printer size={16} />
             Print
@@ -126,6 +126,7 @@ export default function BatchCard() {
         className="relative bg-white border-[3px] border-slate-900 rounded-none overflow-hidden shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] print:m-0 print-half-page"
         ref={cardRef}
       >
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-emerald-500 to-amber-500" />
         {/* Technical Grid Pattern Overlay */}
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
         
@@ -203,7 +204,7 @@ export default function BatchCard() {
 
           {/* QR Code Section */}
           <div className="w-56 flex flex-col items-center justify-center gap-6 border-l-[3px] border-slate-900 pl-12">
-            <div className="qr-code-container bg-white p-4 border-[3px] border-slate-900 shadow-[8px_8px_0_0_rgba(79,70,229,1)]">
+            <div className="qr-code-container bg-white p-4 border-[3px] border-slate-900 shadow-[8px_8px_0_0_rgba(245,158,11,1)]">
               <QRCodeSVG 
                 value={scanUrl} 
                 size={160} 
