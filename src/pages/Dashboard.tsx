@@ -175,34 +175,47 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
     const lastTime = new Date(latest.timestamp).getTime();
     const elapsedMinutes = Math.floor((now - lastTime) / 60000);
 
-    // Only predict if the last recorded process was Washing and it was completed
-    // OR if we are in a chain of processes after washing
+    // Only predict if the last recorded process was Washing, Hydro, or Dryer and it was finished (End)
     if (!latest.status.includes('Wash') && !latest.status.includes('Hydro') && !latest.status.includes('Dryer')) {
       return null;
     }
 
-    if (latest.status.includes('Wash') && latest.status.includes('Completed')) {
-      if (elapsedMinutes < 20) return { status: 'Waiting for Hydro', confidence: 95, timeRemaining: 20 - elapsedMinutes };
-      if (elapsedMinutes < 35) return { status: 'In Hydro Process', confidence: 85, timeRemaining: 35 - elapsedMinutes };
-      if (elapsedMinutes < 65) return { status: 'Waiting for Dryer', confidence: 75, timeRemaining: 65 - elapsedMinutes };
-      if (elapsedMinutes < 125) return { status: 'In Dryer Process', confidence: 70, timeRemaining: 125 - elapsedMinutes };
-      if (elapsedMinutes < 155) return { status: 'Waiting for Quality Check', confidence: 60, timeRemaining: 155 - elapsedMinutes };
-      if (elapsedMinutes < 215) return { status: 'In Quality Check', confidence: 55, timeRemaining: 215 - elapsedMinutes };
-      return { status: 'Ready for Final Audit', confidence: 50, timeRemaining: 0 };
+    // If already finished QC, no prediction
+    if (latest.status.includes('Quality Check') && latest.status.includes('End')) {
+      return null;
     }
 
-    if (latest.status.includes('Hydro') && latest.status.includes('Completed')) {
-      if (elapsedMinutes < 30) return { status: 'Waiting for Dryer', confidence: 90, timeRemaining: 30 - elapsedMinutes };
-      if (elapsedMinutes < 90) return { status: 'In Dryer Process', confidence: 80, timeRemaining: 90 - elapsedMinutes };
-      if (elapsedMinutes < 120) return { status: 'Waiting for Quality Check', confidence: 70, timeRemaining: 120 - elapsedMinutes };
-      if (elapsedMinutes < 180) return { status: 'In Quality Check', confidence: 60, timeRemaining: 180 - elapsedMinutes };
-      return { status: 'Ready for Final Audit', confidence: 50, timeRemaining: 0 };
+    let totalRemaining = 0;
+    let prediction: { status: string, confidence: number, timeRemaining: number } | null = null;
+
+    if (latest.status.includes('Wash') && latest.status.includes('End')) {
+      totalRemaining = 215; // Hydro(35) + Dryer(90) + QC(90)
+      if (elapsedMinutes < 20) prediction = { status: 'Waiting for Hydro', confidence: 95, timeRemaining: 20 - elapsedMinutes };
+      else if (elapsedMinutes < 35) prediction = { status: 'In Hydro Process', confidence: 85, timeRemaining: 35 - elapsedMinutes };
+      else if (elapsedMinutes < 65) prediction = { status: 'Waiting for Dryer', confidence: 75, timeRemaining: 65 - elapsedMinutes };
+      else if (elapsedMinutes < 125) prediction = { status: 'In Dryer Process', confidence: 70, timeRemaining: 125 - elapsedMinutes };
+      else if (elapsedMinutes < 155) prediction = { status: 'Waiting for Quality Check', confidence: 60, timeRemaining: 155 - elapsedMinutes };
+      else if (elapsedMinutes < 215) prediction = { status: 'In Quality Check', confidence: 55, timeRemaining: 215 - elapsedMinutes };
+      else prediction = { status: 'Ready for Final Audit', confidence: 50, timeRemaining: 0 };
+    }
+    else if (latest.status.includes('Hydro') && latest.status.includes('End')) {
+      totalRemaining = 180; // Dryer(90) + QC(90)
+      if (elapsedMinutes < 30) prediction = { status: 'Waiting for Dryer', confidence: 90, timeRemaining: 30 - elapsedMinutes };
+      else if (elapsedMinutes < 90) prediction = { status: 'In Dryer Process', confidence: 80, timeRemaining: 90 - elapsedMinutes };
+      else if (elapsedMinutes < 120) prediction = { status: 'Waiting for Quality Check', confidence: 70, timeRemaining: 120 - elapsedMinutes };
+      else if (elapsedMinutes < 180) prediction = { status: 'In Quality Check', confidence: 60, timeRemaining: 180 - elapsedMinutes };
+      else prediction = { status: 'Ready for Final Audit', confidence: 50, timeRemaining: 0 };
+    }
+    else if (latest.status.includes('Dryer') && latest.status.includes('End')) {
+      totalRemaining = 90; // QC(90)
+      if (elapsedMinutes < 30) prediction = { status: 'Waiting for Quality Check', confidence: 95, timeRemaining: 30 - elapsedMinutes };
+      else if (elapsedMinutes < 90) prediction = { status: 'In Quality Check', confidence: 85, timeRemaining: 90 - elapsedMinutes };
+      else prediction = { status: 'Ready for Final Audit', confidence: 70, timeRemaining: 0 };
     }
 
-    if (latest.status.includes('Dryer') && latest.status.includes('Completed')) {
-      if (elapsedMinutes < 30) return { status: 'Waiting for Quality Check', confidence: 95, timeRemaining: 30 - elapsedMinutes };
-      if (elapsedMinutes < 90) return { status: 'In Quality Check', confidence: 85, timeRemaining: 90 - elapsedMinutes };
-      return { status: 'Ready for Final Audit', confidence: 70, timeRemaining: 0 };
+    if (prediction) {
+      const finishTime = new Date(lastTime + totalRemaining * 60000);
+      return { ...prediction, estimatedFinishTime: format(finishTime, 'HH:mm') };
     }
 
     return null;
@@ -460,6 +473,9 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                             <div className="text-xs text-indigo-400 flex items-center gap-1 mt-1">
                               <Clock className="w-3 h-3" />
                               Predicted: {prediction.status}
+                            </div>
+                            <div className="text-[10px] text-white/40 font-bold mt-1 uppercase tracking-wider">
+                              Est. Finish: {prediction.estimatedFinishTime}
                             </div>
                           </div>
                         </div>
@@ -828,9 +844,14 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                             <Zap className="w-2.5 h-2.5" />
                             {predictStatus(batch.id)?.status}
                           </span>
-                          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-                            {predictStatus(batch.id)?.timeRemaining}m remaining
-                          </span>
+                          <div className="flex flex-col items-center">
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                              {predictStatus(batch.id)?.timeRemaining}m remaining
+                            </span>
+                            <span className="text-[7px] font-black text-indigo-400 uppercase tracking-widest mt-0.5">
+                              Finish: {predictStatus(batch.id)?.estimatedFinishTime}
+                            </span>
+                          </div>
                         </div>
                       ) : (
                         <span className="text-[8px] font-black text-slate-200 uppercase tracking-widest italic">No Prediction</span>
