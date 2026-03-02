@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, QrCode, ClipboardList, Settings, LogOut, User as UserIcon, Activity } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, QrCode, ClipboardList, Settings, LogOut, User as UserIcon, Activity, Table as TableIcon } from 'lucide-react';
 import { cn } from './lib/utils';
 import Dashboard from './pages/Dashboard';
 import CreateBatch from './pages/CreateBatch';
@@ -27,6 +27,18 @@ export default function App() {
             <NavLink to="/create" icon={<PlusCircle size={20} />} label="New Batch" />
             <NavLink to="/batches" icon={<ClipboardList size={20} />} label="All Batches" />
             <NavLink to="/settings" icon={<Settings size={20} />} label="Settings" />
+            <div className="pt-4 px-5">
+              <div className="p-4 bg-emerald-50 border-[3px] border-slate-900 shadow-[4px_4px_0_0_rgba(16,185,129,1)]">
+                <div className="flex items-center gap-3 mb-2">
+                  <TableIcon size={16} className="text-emerald-600" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Sheets Sync</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[9px] font-bold text-emerald-700 uppercase tracking-widest">Connected</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="p-4 border-t-[3px] border-slate-900">

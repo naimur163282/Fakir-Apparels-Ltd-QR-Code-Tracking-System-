@@ -75,6 +75,21 @@ try {
   console.error("Migration error (scans):", error);
 }
 
+async function syncToGoogleSheets(type: 'batch' | 'scan', data: any) {
+  const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
+  if (!scriptUrl) return;
+
+  try {
+    await fetch(scriptUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, data })
+    });
+  } catch (error) {
+    console.error("Google Sheets sync error:", error);
+  }
+}
+
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
@@ -91,6 +106,12 @@ async function startServer() {
       `);
       stmt.run(id, buyer, style, color, apm_name, senior_executive, quantity, batch_type, special_notes);
       
+      // Sync to Google Sheets
+      await syncToGoogleSheets('batch', { 
+        id, buyer, style, color, apm_name, senior_executive, quantity, batch_type, special_notes,
+        created_at: new Date().toISOString()
+      });
+
       res.status(201).json({ success: true });
     } catch (error) {
       console.error(error);
@@ -117,6 +138,12 @@ async function startServer() {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `);
       stmt.run(batch_id, status, location, worker_name, machine_no || null, ok_qty || 0, issued_qty || 0, rejected_qty || 0);
+
+      // Sync to Google Sheets
+      await syncToGoogleSheets('scan', {
+        batch_id, status, location, worker_name, machine_no, ok_qty, issued_qty, rejected_qty,
+        timestamp: new Date().toISOString()
+      });
 
       res.status(201).json({ success: true });
     } catch (error) {
