@@ -42,10 +42,16 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
           fetch('/api/scans'),
           fetch('/api/batches')
         ]);
+        
+        if (!scansRes.ok || !batchesRes.ok) {
+          throw new Error('Failed to fetch data from server');
+        }
+
         const scansData = await scansRes.json();
         const batchesData = await batchesRes.json();
-        setScans(scansData);
-        setBatches(batchesData);
+        
+        setScans(Array.isArray(scansData) ? scansData : []);
+        setBatches(Array.isArray(batchesData) ? batchesData : []);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -582,7 +588,8 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                     <th key={step.id} className="px-6 py-5 text-center border-r border-slate-200">{step.label}</th>
                   ))}
                   <th className="px-6 py-5 text-center border-r border-slate-200">QC Stats</th>
-                  <th className="px-6 py-5 text-center">Final Status</th>
+                  <th className="px-6 py-5 text-center border-r border-slate-200">Final Status</th>
+                  <th className="px-6 py-5 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -647,7 +654,7 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                           return <span className="text-[8px] font-black text-slate-200 uppercase tracking-widest">No Data</span>;
                         })()}
                       </td>
-                      <td className="px-6 py-6 text-center">
+                      <td className="px-6 py-6 border-r border-slate-200 text-center">
                       <div className="flex flex-col items-center">
                         <div className={cn(
                           "w-3 h-3 rounded-full shadow-sm",
@@ -657,6 +664,14 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                           {getLatestStatus(batch.id)?.status.includes('End') ? 'Completed' : 'In Progress'}
                         </span>
                       </div>
+                    </td>
+                    <td className="px-6 py-6 text-center">
+                      <Link 
+                        to={`/scan/${batch.id}`}
+                        className="px-3 py-1.5 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-widest rounded hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
+                      >
+                        Update
+                      </Link>
                     </td>
                   </tr>
                 ))}
@@ -731,6 +746,7 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                       </td>
                       <td className="px-6 py-4 flex items-center gap-4">
                         <Link to={`/batch/${batch.id}`} className="text-indigo-600 hover:text-indigo-700 text-sm font-bold">Card</Link>
+                        <Link to={`/scan/${batch.id}`} className="text-emerald-600 hover:text-emerald-700 text-sm font-bold">Update</Link>
                         <button 
                           onClick={() => setSelectedBatchId(selectedBatchId === batch.id ? null : batch.id)}
                           className="text-slate-400 hover:text-slate-600 text-sm font-bold"
