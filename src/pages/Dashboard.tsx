@@ -8,6 +8,16 @@ import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ChevronRight } from 'lucide-react';
 
+const getStepDuration = (stepName: string, washTime: number = 60) => {
+  const name = stepName.toLowerCase();
+  if (name.includes('washing')) return washTime;
+  if (name.includes('softening')) return 10;
+  if (name.includes('hydro')) return 30;
+  if (name.includes('dryer')) return 120;
+  if (name.includes('qc')) return 30;
+  return 30; // Default fallback
+};
+
 export default function Dashboard({ showListOnly = false }: { showListOnly?: boolean }) {
   const [scans, setScans] = useState<Scan[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
@@ -253,17 +263,17 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
       if (currentStepIndex === -1) return null;
       
       const isFinished = currentStatus.includes('End');
-      const totalEstimated = batch.estimated_total_time || 240;
-      const stepDuration = Math.floor(totalEstimated / batch.process_steps.length);
+      const stepDuration = getStepDuration(batch.process_steps[currentStepIndex], batch.estimated_total_time);
 
       if (isFinished) {
         // If finished current step, predict next step
         if (currentStepIndex < batch.process_steps.length - 1) {
           const nextStep = batch.process_steps[currentStepIndex + 1];
-          const finishTime = new Date(now + stepDuration * 60000);
+          const nextStepDuration = getStepDuration(nextStep, batch.estimated_total_time);
+          const finishTime = new Date(now + nextStepDuration * 60000);
           return {
             status: `Next: ${nextStep}`,
-            timeRemaining: stepDuration,
+            timeRemaining: nextStepDuration,
             confidence: 90,
             estimatedFinishTime: format(finishTime, 'HH:mm')
           };
@@ -1385,14 +1395,29 @@ function ProcessFlowchart({ batch, latestScan }: { batch: Batch, latestScan: any
     </div>
   );
 
-  const totalMinutes = batch.estimated_total_time || 240;
-  const stepDuration = Math.floor(totalMinutes / batch.process_steps.length);
+  const stepsWithDuration = batch.process_steps.map(step => ({
+    name: step,
+    duration: getStepDuration(step, batch.estimated_total_time)
+  }));
+
+  const totalMinutes = stepsWithDuration.reduce((acc, curr) => acc + curr.duration, 0);
   
   const startTime = new Date(batch.created_at);
   const completionTime = new Date(startTime.getTime() + totalMinutes * 60000);
 
   const currentStatus = latestScan?.status || "";
   const currentStepIndex = batch.process_steps.findIndex(step => currentStatus.includes(step));
+
+  // Calculate cumulative start times for each step
+  const stepTimeline = stepsWithDuration.reduce((acc: any[], curr, idx) => {
+    const prevEnd = idx === 0 ? startTime.getTime() : acc[idx - 1].endTime;
+    acc.push({
+      ...curr,
+      startTime: prevEnd,
+      endTime: prevEnd + curr.duration * 60000
+    });
+    return acc;
+  }, []);
 
   return (
     <div className="relative">
@@ -1416,11 +1441,11 @@ function ProcessFlowchart({ batch, latestScan }: { batch: Batch, latestScan: any
         <div className="hidden lg:block absolute top-10 left-0 right-0 h-1 bg-slate-100" />
         
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-8 relative">
-          {batch.process_steps.map((step, idx) => {
+          {stepTimeline.map((step, idx) => {
             const isCompleted = idx < currentStepIndex || (idx === currentStepIndex && currentStatus.includes("End"));
             const isCurrent = idx === currentStepIndex && !currentStatus.includes("End");
-            const stepTime = new Date(startTime.getTime() + (idx * stepDuration) * 60000);
-            const endTime = new Date(startTime.getTime() + ((idx + 1) * stepDuration) * 60000);
+            const stepStartTime = new Date(step.startTime);
+            const stepEndTime = new Date(step.endTime);
 
             return (
               <div key={idx} className="relative flex flex-col items-center text-center group">
@@ -1440,14 +1465,14 @@ function ProcessFlowchart({ batch, latestScan }: { batch: Batch, latestScan: any
                     "text-sm font-black uppercase tracking-tighter italic transition-colors",
                     isCurrent ? "text-indigo-600" : isCompleted ? "text-emerald-600" : "text-slate-400"
                   )}>
-                    {step}
+                    {step.name}
                   </h4>
                   <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-100 rounded-lg">
                     <Clock size={10} className="text-slate-400" />
-                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{stepDuration}m</span>
+                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{step.duration}m</span>
                   </div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">
-                    {format(stepTime, 'HH:mm')} — {format(endTime, 'HH:mm')}
+                    {format(stepStartTime, 'HH:mm')} — {format(stepEndTime, 'HH:mm')}
                   </p>
                 </div>
 

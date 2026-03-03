@@ -198,12 +198,12 @@ export default function CreateBatch() {
               </select>
             </div>
             <InputGroup 
-              label="Estimated Total Wash Time (Min)" 
+              label="Washing Process Time (Min)" 
               icon={<Clock size={18} />}
               type="number"
               value={formData.estimated_total_time}
               onChange={(v) => setFormData({ ...formData, estimated_total_time: v })}
-              placeholder="e.g. 240"
+              placeholder="e.g. 60"
               required
             />
           </div>
