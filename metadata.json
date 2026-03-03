@@ -1,5 +1,5 @@
 {
-  "name": "Garment Batch Tracker",
-  "description": "A comprehensive system for tracking garment production batches using QR codes and real-time status updates.",
+  "name": "Fakir Apparels Ltd | Production Tracking",
+  "description": "High-precision QR-based garment production tracking and real-time telemetry for Fakir Apparels Ltd.",
   "requestFramePermissions": ["camera"]
 }
