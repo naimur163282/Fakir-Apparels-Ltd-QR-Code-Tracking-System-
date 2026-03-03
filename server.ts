@@ -50,31 +50,82 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
+  app.get("/api/diag", async (req, res) => {
+    const config = {
+      supabaseUrl: supabaseUrl ? "Present (starts with " + supabaseUrl.substring(0, 10) + "...)" : "Missing",
+      supabaseKey: supabaseKey ? "Present" : "Missing",
+      env: process.env.NODE_ENV || 'development'
+    };
+    
+    try {
+      const { data, error } = await supabase.from('batches').select('id').limit(1);
+      res.json({
+        config,
+        database: error ? { status: "Error", message: error.message, code: error.code } : { status: "Connected", count: data?.length }
+      });
+    } catch (e: any) {
+      res.json({
+        config,
+        database: { status: "Exception", message: e.message }
+      });
+    }
+  });
+
   app.post("/api/batches", async (req, res) => {
+    if (!supabaseUrl || !supabaseKey) {
+      return res.status(500).json({ 
+        error: "Server Configuration Error", 
+        details: "SUPABASE_URL or SUPABASE_ANON_KEY is missing in environment variables.",
+        hint: "Please check your .env file or platform environment settings."
+      });
+    }
     const { id, buyer, style, color, apm_name, senior_executive, quantity, batch_type, special_notes, estimated_total_time, process_steps } = req.body;
     try {
-      const { error } = await supabase
-        .from('batches')
-        .insert([{ 
-          id, buyer, style, color, apm_name, senior_executive, quantity, batch_type, special_notes,
-          estimated_total_time,
-          process_steps
-        }]);
-
-      if (error) throw error;
+      console.log("--- BATCH CREATION REQUEST ---");
+      console.log("Payload:", JSON.stringify(req.body, null, 2));
       
-      // Sync to Google Sheets
-      await syncToGoogleSheets('batch', { 
+      const insertData = { 
         id, buyer, style, color, apm_name, senior_executive, quantity, batch_type, special_notes,
         estimated_total_time,
-        process_steps,
-        created_at: new Date().toISOString()
-      });
+        process_steps
+      };
+
+      const { data, error } = await supabase
+        .from('batches')
+        .insert([insertData])
+        .select();
+
+      if (error) {
+        console.error("Supabase Insert Error:", JSON.stringify(error, null, 2));
+        throw error;
+      }
+      
+      console.log("Batch created successfully in Supabase:", data);
+      
+      // Sync to Google Sheets
+      try {
+        await syncToGoogleSheets('batch', { 
+          id, buyer, style, color, apm_name, senior_executive, quantity, batch_type, special_notes,
+          estimated_total_time,
+          process_steps,
+          created_at: new Date().toISOString()
+        });
+      } catch (syncErr) {
+        console.error("Google Sheets Sync failed (non-blocking):", syncErr);
+      }
 
       res.status(201).json({ success: true });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Failed to create batch" });
+    } catch (error: any) {
+      console.error("Batch Creation Failed:", error);
+      // Log the full error object for debugging
+      console.log("Full error details:", JSON.stringify(error, null, 2));
+      
+      res.status(500).json({ 
+        error: "Failed to create batch", 
+        details: error.message || "Unknown database error",
+        hint: error.hint || "",
+        code: error.code || "NO_CODE"
+      });
     }
   });
 

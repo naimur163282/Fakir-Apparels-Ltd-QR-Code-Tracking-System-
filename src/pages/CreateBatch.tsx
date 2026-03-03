@@ -44,10 +44,21 @@ export default function CreateBatch() {
       setError('Please select at least one process step.');
       return;
     }
+    const qty = parseInt(formData.quantity);
+    const estTime = parseInt(formData.estimated_total_time);
+
+    if (isNaN(qty) || qty <= 0) {
+      setError('Please enter a valid quantity.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
-    const batchId = `BT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    // More robust ID generation
+    const randomPart = Math.random().toString(36).substring(2, 7).toUpperCase();
+    const timePart = Date.now().toString(36).slice(-3).toUpperCase();
+    const batchId = `BT-${randomPart}${timePart}`;
     
     try {
       const response = await fetch('/api/batches', {
@@ -56,8 +67,8 @@ export default function CreateBatch() {
         body: JSON.stringify({
           id: batchId,
           ...formData,
-          quantity: parseInt(formData.quantity),
-          estimated_total_time: parseInt(formData.estimated_total_time),
+          quantity: qty,
+          estimated_total_time: isNaN(estTime) ? 240 : estTime,
           process_steps: selectedSteps
         })
       });
@@ -66,7 +77,13 @@ export default function CreateBatch() {
         navigate(`/batch/${batchId}`);
       } else {
         const errData = await response.json();
-        setError(errData.error || 'Failed to generate batch. Please try again.');
+        const fullError = [
+          errData.error,
+          errData.details,
+          errData.hint ? `Hint: ${errData.hint}` : null,
+          errData.code ? `Code: ${errData.code}` : null
+        ].filter(Boolean).join(' | ');
+        setError(fullError || 'Failed to generate batch. Please try again.');
       }
     } catch (error) {
       console.error('Error creating batch:', error);
