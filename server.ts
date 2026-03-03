@@ -51,17 +51,23 @@ async function startServer() {
 
   // API Routes
   app.post("/api/batches", async (req, res) => {
-    const { id, buyer, style, color, apm_name, senior_executive, quantity, batch_type, special_notes } = req.body;
+    const { id, buyer, style, color, apm_name, senior_executive, quantity, batch_type, special_notes, estimated_total_time, process_steps } = req.body;
     try {
       const { error } = await supabase
         .from('batches')
-        .insert([{ id, buyer, style, color, apm_name, senior_executive, quantity, batch_type, special_notes }]);
+        .insert([{ 
+          id, buyer, style, color, apm_name, senior_executive, quantity, batch_type, special_notes,
+          estimated_total_time,
+          process_steps
+        }]);
 
       if (error) throw error;
       
       // Sync to Google Sheets
       await syncToGoogleSheets('batch', { 
         id, buyer, style, color, apm_name, senior_executive, quantity, batch_type, special_notes,
+        estimated_total_time,
+        process_steps,
         created_at: new Date().toISOString()
       });
 

@@ -153,6 +153,10 @@ export default function UpdateStatus() {
     );
   }
 
+  const dynamicProcesses = batch?.process_steps && batch.process_steps.length > 0 
+    ? batch.process_steps 
+    : PROCESSES;
+
   return (
     <div className="max-w-md mx-auto pb-20">
       <header className="mb-10">
@@ -236,7 +240,7 @@ export default function UpdateStatus() {
               2. Select Process
             </label>
             <div className="grid grid-cols-2 gap-3">
-              {PROCESSES.map((proc, idx) => {
+              {dynamicProcesses.map((proc, idx) => {
                 const colors = [
                   "bg-blue-600 border-blue-600 shadow-blue-200",
                   "bg-emerald-600 border-emerald-600 shadow-emerald-200",

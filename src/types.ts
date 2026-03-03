@@ -9,6 +9,8 @@ export interface Batch {
   batch_type: string;
   special_notes: string;
   created_at: string;
+  estimated_total_time?: number; // in minutes
+  process_steps?: string[]; // e.g., ["Washing", "Hydro", "Dryer"]
 }
 
 export interface Scan {

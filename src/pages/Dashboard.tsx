@@ -6,6 +6,7 @@ import { Batch, Scan } from '../types';
 import { cn } from '../lib/utils';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { ChevronRight } from 'lucide-react';
 
 export default function Dashboard({ showListOnly = false }: { showListOnly?: boolean }) {
   const [scans, setScans] = useState<Scan[]>([]);
@@ -14,7 +15,7 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
   const [filterStatus, setFilterStatus] = useState('All');
   const [loading, setLoading] = useState(true);
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'telemetry' | 'grid' | 'inventory'>('telemetry');
+  const [viewMode, setViewMode] = useState<'telemetry' | 'grid' | 'inventory' | 'roadmap'>('telemetry');
   const [uptime, setUptime] = useState('00:00:00');
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [selectedShift, setSelectedShift] = useState<'All' | 'Day' | 'Night'>('All');
@@ -235,15 +236,59 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
   };
 
   const predictStatus = (batchId: string) => {
+    const batch = batches.find(b => b.id === batchId);
     const batchScans = scans.filter(s => s.batch_id === batchId).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    if (batchScans.length === 0) return null;
+    if (batchScans.length === 0 || !batch) return null;
 
     const latest = batchScans[0];
     const now = new Date().getTime();
     const lastTime = new Date(latest.timestamp).getTime();
     const elapsedMinutes = Math.floor((now - lastTime) / 60000);
 
-    // Only predict if the last recorded process was Washing, Hydro, or Dryer and it was finished (End)
+    // If batch has custom process steps, use them for prediction
+    if (batch.process_steps && batch.process_steps.length > 0) {
+      const currentStatus = latest.status;
+      const currentStepIndex = batch.process_steps.findIndex(step => currentStatus.includes(step));
+      
+      if (currentStepIndex === -1) return null;
+      
+      const isFinished = currentStatus.includes('End');
+      const totalEstimated = batch.estimated_total_time || 240;
+      const stepDuration = Math.floor(totalEstimated / batch.process_steps.length);
+
+      if (isFinished) {
+        // If finished current step, predict next step
+        if (currentStepIndex < batch.process_steps.length - 1) {
+          const nextStep = batch.process_steps[currentStepIndex + 1];
+          const finishTime = new Date(now + stepDuration * 60000);
+          return {
+            status: `Next: ${nextStep}`,
+            timeRemaining: stepDuration,
+            confidence: 90,
+            estimatedFinishTime: format(finishTime, 'HH:mm')
+          };
+        } else {
+          return {
+            status: "Production Complete",
+            timeRemaining: 0,
+            confidence: 100,
+            estimatedFinishTime: "Done"
+          };
+        }
+      } else {
+        // If still running current step, predict end of current step
+        const remainingInStep = Math.max(0, stepDuration - elapsedMinutes);
+        const finishTime = new Date(now + remainingInStep * 60000);
+        return {
+          status: `Ending: ${batch.process_steps[currentStepIndex]}`,
+          timeRemaining: remainingInStep,
+          confidence: 85,
+          estimatedFinishTime: format(finishTime, 'HH:mm')
+        };
+      }
+    }
+
+    // Fallback to old prediction logic if no custom steps
     if (!latest.status.includes('Wash') && !latest.status.includes('Hydro') && !latest.status.includes('Dryer')) {
       return null;
     }
@@ -420,6 +465,16 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
             >
               <List size={14} />
               List
+            </button>
+            <button 
+              onClick={() => setViewMode('roadmap')}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                viewMode === 'roadmap' ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" : "text-slate-500 hover:bg-slate-50"
+              )}
+            >
+              <Activity size={14} />
+              Roadmap
             </button>
           </div>
 
@@ -836,6 +891,7 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                   <th className="px-6 py-5 text-center border-r border-white/10 text-emerald-400">QC Stats</th>
                   <th className="px-6 py-5 text-center border-r border-white/10 text-indigo-400">Final Status</th>
                   <th className="px-6 py-5 text-center border-r border-white/10 text-amber-400">AI Prediction</th>
+                  <th className="px-6 py-5 text-center border-r border-white/10 text-cyan-400">Roadmap</th>
                   <th className="px-6 py-5 text-center text-white">Action</th>
                 </tr>
               </thead>
@@ -931,6 +987,31 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                       ) : (
                         <span className="text-[8px] font-black text-slate-200 uppercase tracking-widest italic">No Prediction</span>
                       )}
+                    </td>
+                    <td className="px-6 py-6 border-r border-slate-200 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        {batch.process_steps?.map((step, sIdx) => {
+                          const isDone = scans.some(s => s.batch_id === batch.id && s.status.includes(step) && s.status.includes('End'));
+                          const isRunning = scans.some(s => s.batch_id === batch.id && s.status.includes(step) && s.status.includes('Running'));
+                          return (
+                            <div key={sIdx} className="flex items-center">
+                              <div 
+                                title={step}
+                                className={cn(
+                                  "w-2 h-2 rounded-full",
+                                  isDone ? "bg-emerald-500" : isRunning ? "bg-indigo-600 animate-pulse" : "bg-slate-200"
+                                )} 
+                              />
+                              {sIdx < batch.process_steps!.length - 1 && (
+                                <div className="w-2 h-[1px] bg-slate-100" />
+                              )}
+                            </div>
+                          );
+                        })}
+                        {(!batch.process_steps || batch.process_steps.length === 0) && (
+                          <span className="text-[8px] font-black text-slate-200 uppercase tracking-widest italic">No Roadmap</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-6 text-center">
                       <Link 
@@ -1043,6 +1124,91 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
                 </tr>
               </tfoot>
             </table>
+          </div>
+        </div>
+      )}
+
+      {viewMode === 'roadmap' && (
+        <div className="space-y-8">
+          <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-[0_32px_64px_-15px_rgba(0,0,0,0.05)] relative">
+            <div className="absolute top-0 left-0 w-full h-2 bg-indigo-600" />
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-black text-4xl uppercase tracking-tighter italic text-slate-900">Production Roadmap</h3>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Real-time process flow visualization for all active batches</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Batches</p>
+                  <p className="text-2xl font-black text-indigo-600">{batches.length}</p>
+                </div>
+                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                  <Activity size={24} />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-10">
+            {batches.filter(b => {
+              const latest = getLatestStatus(b.id);
+              return !latest || !latest.status.includes('Quality Check - End');
+            }).map(batch => (
+              <div key={batch.id} className="bg-white rounded-[3rem] border border-slate-200 overflow-hidden shadow-2xl hover:shadow-indigo-500/10 transition-all group">
+                <div className="p-10 bg-slate-50 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                  <div className="flex items-center gap-8">
+                    <div className="w-20 h-20 bg-slate-950 text-white flex items-center justify-center rounded-[2rem] shadow-xl group-hover:scale-110 transition-transform">
+                      <Package size={32} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="px-3 py-1 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full">
+                          {batch.batch_type}
+                        </span>
+                        <span className="text-xs font-mono font-black text-indigo-600">{batch.id}</span>
+                      </div>
+                      <h4 className="text-4xl font-black uppercase tracking-tighter italic text-slate-900 leading-none">{batch.style}</h4>
+                      <div className="flex items-center gap-3 mt-3">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{batch.buyer}</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                        <span className="text-xs font-black text-slate-900 uppercase tracking-widest">{batch.quantity} PCS</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Link 
+                      to={`/scan/${batch.id}`}
+                      className="px-8 py-4 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 flex items-center gap-2"
+                    >
+                      <Zap size={16} />
+                      Update Status
+                    </Link>
+                    <Link 
+                      to={`/batch/${batch.id}`}
+                      className="px-8 py-4 bg-white border border-slate-200 rounded-2xl text-xs font-black uppercase tracking-widest text-slate-600 hover:bg-slate-950 hover:text-white transition-all shadow-sm flex items-center gap-2"
+                    >
+                      <List size={16} />
+                      View Card
+                    </Link>
+                  </div>
+                </div>
+                <div className="p-12">
+                   <ProcessFlowchart batch={batch} latestScan={getLatestStatus(batch.id)} />
+                </div>
+              </div>
+            ))}
+            {batches.filter(b => {
+              const latest = getLatestStatus(b.id);
+              return !latest || !latest.status.includes('Quality Check - End');
+            }).length === 0 && (
+              <div className="p-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-200">
+                <div className="w-20 h-20 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Activity size={40} />
+                </div>
+                <h4 className="text-2xl font-black uppercase tracking-tighter italic text-slate-400">No Active Production</h4>
+                <p className="text-slate-400 font-medium mt-2">All batches have completed the production cycle.</p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1208,6 +1374,93 @@ export default function Dashboard({ showListOnly = false }: { showListOnly?: boo
           </motion.div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ProcessFlowchart({ batch, latestScan }: { batch: Batch, latestScan: any }) {
+  if (!batch.process_steps || batch.process_steps.length === 0) return (
+    <div className="p-10 text-center bg-slate-50 rounded-3xl border border-slate-100">
+      <p className="text-xs font-black uppercase tracking-widest text-slate-400">No process steps defined for this batch.</p>
+    </div>
+  );
+
+  const totalMinutes = batch.estimated_total_time || 240;
+  const stepDuration = Math.floor(totalMinutes / batch.process_steps.length);
+  
+  const startTime = new Date(batch.created_at);
+  const completionTime = new Date(startTime.getTime() + totalMinutes * 60000);
+
+  const currentStatus = latestScan?.status || "";
+  const currentStepIndex = batch.process_steps.findIndex(step => currentStatus.includes(step));
+
+  return (
+    <div className="relative">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
+        <div>
+          <h3 className="text-2xl font-black uppercase tracking-tighter italic text-slate-900">Process Timeline</h3>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">
+            Baseline: {totalMinutes}m total duration
+          </p>
+        </div>
+        <div className="bg-slate-900 text-white px-6 py-4 rounded-2xl border-b-4 border-indigo-600 shadow-xl">
+          <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-1">Est. Completion</p>
+          <p className="text-xl font-black tracking-tighter uppercase italic">
+            {format(completionTime, 'HH:mm')}
+            <span className="text-[10px] ml-2 text-indigo-400 font-bold tracking-normal not-italic">{format(completionTime, 'MMM d')}</span>
+          </p>
+        </div>
+      </div>
+
+      <div className="relative">
+        <div className="hidden lg:block absolute top-10 left-0 right-0 h-1 bg-slate-100" />
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-8 relative">
+          {batch.process_steps.map((step, idx) => {
+            const isCompleted = idx < currentStepIndex || (idx === currentStepIndex && currentStatus.includes("End"));
+            const isCurrent = idx === currentStepIndex && !currentStatus.includes("End");
+            const stepTime = new Date(startTime.getTime() + (idx * stepDuration) * 60000);
+            const endTime = new Date(startTime.getTime() + ((idx + 1) * stepDuration) * 60000);
+
+            return (
+              <div key={idx} className="relative flex flex-col items-center text-center group">
+                <div className={cn(
+                  "w-20 h-20 rounded-[2rem] border-[3px] flex items-center justify-center z-10 transition-all duration-500 mb-6",
+                  isCompleted 
+                    ? "bg-emerald-500 border-slate-900 text-white shadow-[0_10px_20px_-5px_rgba(16,185,129,0.4)]" 
+                    : isCurrent
+                      ? "bg-indigo-600 border-slate-900 text-white shadow-[0_10px_20px_-5px_rgba(79,70,229,0.4)] animate-pulse"
+                      : "bg-white border-slate-200 text-slate-300 group-hover:border-indigo-600 group-hover:text-indigo-600"
+                )}>
+                  {isCompleted ? <CheckCircle2 size={32} /> : <span className="text-2xl font-black italic">{idx + 1}</span>}
+                </div>
+                
+                <div className="space-y-2">
+                  <h4 className={cn(
+                    "text-sm font-black uppercase tracking-tighter italic transition-colors",
+                    isCurrent ? "text-indigo-600" : isCompleted ? "text-emerald-600" : "text-slate-400"
+                  )}>
+                    {step}
+                  </h4>
+                  <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-100 rounded-lg">
+                    <Clock size={10} className="text-slate-400" />
+                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{stepDuration}m</span>
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">
+                    {format(stepTime, 'HH:mm')} — {format(endTime, 'HH:mm')}
+                  </p>
+                </div>
+
+                {idx < batch.process_steps.length - 1 && (
+                  <div className="hidden lg:flex absolute top-8 -right-4 z-20 text-slate-200">
+                    <ChevronRight size={20} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

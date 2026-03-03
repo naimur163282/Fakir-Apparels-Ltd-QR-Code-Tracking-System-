@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Save, User, Tag, Palette, Briefcase, Users, Hash, FileText, AlertCircle, Sparkles } from 'lucide-react';
+import { Save, User, Tag, Palette, Briefcase, Users, Hash, FileText, AlertCircle, Sparkles, Clock } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 export default function CreateBatch() {
   const navigate = useNavigate();
@@ -15,11 +16,34 @@ export default function CreateBatch() {
     senior_executive: '',
     quantity: '',
     batch_type: 'Bulk',
-    special_notes: ''
+    special_notes: '',
+    estimated_total_time: '240', // Default 4 hours
   });
+  const [selectedSteps, setSelectedSteps] = useState<string[]>([]);
+
+  const AVAILABLE_STEPS = [
+    "Washing",
+    "Acid wash",
+    "Softening",
+    "Hydro",
+    "Dryer",
+    "QC check"
+  ];
+
+  const toggleStep = (step: string) => {
+    setSelectedSteps(prev => 
+      prev.includes(step) 
+        ? prev.filter(s => s !== step)
+        : [...prev, step]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (selectedSteps.length === 0) {
+      setError('Please select at least one process step.');
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -32,7 +56,9 @@ export default function CreateBatch() {
         body: JSON.stringify({
           id: batchId,
           ...formData,
-          quantity: parseInt(formData.quantity)
+          quantity: parseInt(formData.quantity),
+          estimated_total_time: parseInt(formData.estimated_total_time),
+          process_steps: selectedSteps
         })
       });
 
@@ -154,6 +180,47 @@ export default function CreateBatch() {
                 <option value="Re-wash">Re-wash / Repair</option>
               </select>
             </div>
+            <InputGroup 
+              label="Estimated Total Wash Time (Min)" 
+              icon={<Clock size={18} />}
+              type="number"
+              value={formData.estimated_total_time}
+              onChange={(v) => setFormData({ ...formData, estimated_total_time: v })}
+              placeholder="e.g. 240"
+              required
+            />
+          </div>
+
+          <div className="space-y-4">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+              <Sparkles size={18} />
+              Batch Process
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {AVAILABLE_STEPS.map(step => (
+                <button
+                  key={step}
+                  type="button"
+                  onClick={() => toggleStep(step)}
+                  className={cn(
+                    "px-4 py-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border-2 flex items-center justify-between group",
+                    selectedSteps.includes(step)
+                      ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200"
+                      : "bg-white border-slate-100 text-slate-400 hover:border-indigo-200 hover:text-indigo-600"
+                  )}
+                >
+                  {step}
+                  {selectedSteps.includes(step) && (
+                    <span className="bg-white/20 px-2 py-1 rounded-lg text-[10px]">
+                      {selectedSteps.indexOf(step) + 1}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+              Tap steps in order of production. Only selected steps will be available during scanning.
+            </p>
           </div>
 
           <div className="space-y-2">
